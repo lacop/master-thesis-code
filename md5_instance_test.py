@@ -1,5 +1,5 @@
 from instance import *
-from md5_test import S, K, fs, gs, md5
+from md5_test import S, K, fs, gs, md5, digest_to_hex
 
 #print(md5(b"\x00", rounds=1))
 
@@ -18,9 +18,12 @@ def intToVector(x, size=32):
 Kvec = [intToVector(x) for x in K]
 
 # Original message length in bits
-mlength = 8*8
-# For now just single block/chunk of 64bytes
-# 14 block for data + padding, 2 block for length
+mlength = 8*32
+
+###################################################
+
+# For now just single block/chunk of 64bytes,
+# 14 blocks for data + padding, 2 blocks for length
 # Total of 16 blocks
 Mvec = [BitVector(32) for _ in range(14)]
 
@@ -47,6 +50,14 @@ for i in range(rounds):
     A, B, C, D = D, B+R, B, C
 a0, b0, c0, d0 = a0+A, b0+B, c0+C, d0+D
 
+###################################################
+
+# Fix message/output bits here
+#Mvec[0].bits = [True]*32
+a0.bits = [True]*10 + [None]*22
+
+###################################################
+
 # TODO prettier
 # Generate CNF instance, solve, read
 print('Emit start')
@@ -66,7 +77,7 @@ def toInt(bits):
 Mbits = []
 for i in range(mlength):
     Mbits.append(Mvec[i // 32].getValuation(instance)[i % 32])
-print('Message length', mlength, 'bits', Mbits)
+print('Message length', mlength, 'bits') #, Mbits)
 # Get digest bits
 Dbits = []
 for q in [a0, b0, c0, d0]:
@@ -79,9 +90,9 @@ message = b""
 for i in range(0, mlength//8):
     bits = Mvec[i//4].getValuation(instance)[(i%4)*8 : (i%4)*8 + 8]
     message += toInt(bits).to_bytes(1, byteorder='little')
-print ('Message bytes:', message)
+print ('Message bytes:', message, 'rounds: ', rounds)
 
 reference = md5(message, rounds=rounds)
-print('MD5   ', reference)
+print('MD5   ', reference, digest_to_hex(reference))
 assert reference == toInt(Dbits)
 print('MATCH!')
