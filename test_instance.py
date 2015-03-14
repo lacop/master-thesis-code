@@ -19,23 +19,39 @@ from instance import *
 #C.bits[0] = True
 #C.bits[1] = True
 
-A = ConstantVector([0, 1, 1, 0, 1, 1])
+#A = ConstantVector([0, 1, 1, 0, 1, 1])
 #B = ConstantVector([1, 1, 1, 0, 0, 1])
-B = BitVector(6)
-C = OperatorAdd(A, B)
-C.bits = [True, False, True, True, True, False]
-D = OperatorNot(C)
+#B = BitVector(6)
+#C = OperatorAdd(A, B)
+#C = A + B
+#C.bits = [True, False, True, True, True, False]
+#D = ~C
 
 i = Instance()
 #i.emit(H)
-i.emit(D)
+#i.emit([D])
+
+A = ConstantVector([0, 0, 0, 0])
+B = ConstantVector([1, 0, 0, 0])
+#X = [A]
+for _ in range(7):
+    A = A + B
+i.emit([A])
+#    X.append(X[-1] + B)
+#C = X[-1]
+#C = A + B
+#C.bits = [True, False]
+#D = C + B
+#i.emit([C])
+#i.emit([D])
+#i.emit([C, D])
 
 from subprocess import call
 call(['minisat', 'instance.cnf', 'instance.out'])
 i.read('instance.out')
 
 #i.verify(H)
-i.verify(D)
+#i.verify(D)
 
 def toInt(X):
     val = 0
@@ -44,9 +60,9 @@ def toInt(X):
     return val
 
 print('A', A.getValuation(i), toInt(A))
-print('B', B.getValuation(i), toInt(B))
-print('C', C.getValuation(i), toInt(C), toInt(A)+toInt(B), (toInt(A) + toInt(B)) % 2**(len(A.bits)))
-print('D', D.getValuation(i))
+#print('B', B.getValuation(i), toInt(B))
+#print('C', C.getValuation(i), toInt(C), toInt(A)+toInt(B), (toInt(A) + toInt(B)) % 2**(len(A.bits)))
+#print('D', D.getValuation(i), toInt(D))
 #print('E', E.getValuation(i))
 #print('F', F.getValuation(i))
 #print('G', G.getValuation(i))

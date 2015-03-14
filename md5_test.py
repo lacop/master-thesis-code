@@ -35,7 +35,7 @@ def leftrotate(x, i):
     #print('rot', x, i)
     return ((x << i) | (x >> (32 - i))) & 0xFFFFFFFF
 
-def md5(message):
+def md5(message, rounds = 64):
     a0 = 0x67452301
     b0 = 0xefcdab89
     c0 = 0x98badcfe
@@ -46,6 +46,7 @@ def md5(message):
 
     # Append 1
     message.append(0b10000000)
+
     # Append zeroes to pad
     while len(message) % 64 != 56:
         message.append(0)
@@ -58,13 +59,14 @@ def md5(message):
         chunk = message[pos:pos+64]
         #print(pos, chunk)#import md5_test_rosetta
         A, B, C, D = a0, b0, c0, d0
-        for i in range(64):
+        for i in range(rounds):
             F = fs[i//16](A, B, C, D)
             G = gs[i//16](i)
             # M[G]
             #print(i, F, G)
             mg = int.from_bytes(chunk[4*G:4*G+4], byteorder='little')
             rot = leftrotate((A + F + K[i] + mg) & 0xFFFFFFFF, S[i])
+            #print((A + F + K[i] + mg) & 0xFFFFFFFF, rot)
             A, B, C, D = D, (B+rot) & 0xFFFFFFFF, B, C
             #print(A)
             #print(B)
@@ -78,17 +80,18 @@ def md5(message):
         #print(b0)
         #print(c0)
         #print(d0)
-
     digest = 0
     for x in [d0, c0, b0, a0]:
         digest = digest<<32 | x
     return digest
+
+
 def digest_to_hex(digest):
     return '{:032x}'.format(int.from_bytes(digest.to_bytes(16, byteorder='little'), byteorder='big'))
 
-assert digest_to_hex(md5(b'')) == 'd41d8cd98f00b204e9800998ecf8427e'
-assert digest_to_hex(md5(b'The quick brown fox jumps over the lazy dog')) == '9e107d9d372bb6826bd81d3542a419d6'
-assert digest_to_hex(md5(b'The quick brown fox jumps over the lazy dog.')) == 'e4d909c290d0fb1ca068ffaddf22cbd0'
-
-#print(digest_to_hex(md5(b'')))
-#print(md5(b""))
+if __name__ == '__main__':
+    assert digest_to_hex(md5(b'')) == 'd41d8cd98f00b204e9800998ecf8427e'
+    assert digest_to_hex(md5(b'The quick brown fox jumps over the lazy dog')) == '9e107d9d372bb6826bd81d3542a419d6'
+    assert digest_to_hex(md5(b'The quick brown fox jumps over the lazy dog.')) == 'e4d909c290d0fb1ca068ffaddf22cbd0'
+    print(digest_to_hex(md5(b'')))
+    print(md5(b""))
