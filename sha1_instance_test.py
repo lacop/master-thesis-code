@@ -32,7 +32,7 @@ def toIntBE(bits):
 Kvec = [intToVector(x) for x in K]
 
 # Original message length in bits
-mlength = 8*4 # 8*1 #8*32
+mlength = 16*8 #8*4 # 8*1 #8*32
 
 ###################################################
 
@@ -62,7 +62,7 @@ for i in range(16, 80):
 #assert False
 
 # Number of rounds, full SHA1 is 80
-rounds = 80 #16
+rounds = 30 #16
 
 #a0, b0, c0, d0 = [intToVector(x) for x in [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]]
 h0, h1, h2, h3, h4 = [intToVector(x) for x in [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]]
@@ -89,7 +89,11 @@ h0, h1, h2, h3, h4 = h0+A, h1+B, h2+C, h3+D, h4+E
 #for i in range(8):
 #    Mvec[0].bits[31-i] = False
 #print(Mvec[0].bits)
+#Mvec[0].bits = [True]*32
 #a0.bits = [True]*32
+#h4.bits = [False]*16 + [None]*16
+#h0.bits = [True]*16 + [None]*16
+
 
 ###################################################
 
@@ -117,7 +121,8 @@ instance.read('instance.out')
 #print(toInt(D.getValuation(instance)))
 #print(toInt(E.getValuation(instance)))
 #print(toInt(Mvec[0].getValuation(instance)))
-print('    ', [toInt(v.getValuation(instance)) for v in Mvec])
+#print('    ', [toInt(v.getValuation(instance)) for v in Mvec])
+#print(h0.getValuation(instance))
 #assert False
 
 # Get message bits
