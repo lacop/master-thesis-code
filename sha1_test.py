@@ -29,6 +29,8 @@ def sha1(message, rounds = 80):
     # Append original length
     message += length.to_bytes(8, byteorder='big')
 
+    #print(message)
+    #print('sha1', [int.from_bytes(message[4*i:4*i+4], byteorder='big') for i in range(16)])
 
     #print(len(message))
     # Split to chunks of size 64 bytes
@@ -38,12 +40,20 @@ def sha1(message, rounds = 80):
         W = [int.from_bytes(chunk[4*i:4*i+4], byteorder='big') for i in range(16)]
         for i in range(16, 80):
             W.append(leftrotate(W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16], 1))
+        #print('sha1', W)
 
-        #print(W)
+        #QQ = (h0 + h1)&0xFFFFFFFF
+        #print(h0, 'h0 sha1')
+        #print(h1, 'h1 sha1')
+        #print(QQ, 'qq sha1')
+        #return 0
+        #print('W = ', W)
         A, B, C, D, E = h0, h1, h2, h3, h4
         for i in range(rounds):
             F = fs[i//20](A, B, C, D, E)
             k = K[i//20]
+
+
 
             T = (leftrotate(A, 5) + F + E + k + W[i]) & 0xFFFFFFFF
             E = D
@@ -51,6 +61,10 @@ def sha1(message, rounds = 80):
             C = leftrotate(B, 30)
             B = A
             A = T
+
+
+            #print('sha1 abcde', A, B, C, D, E)
+            #print(W[0])
             #mg = int.from_bytes(chunk[4*G:4*G+4], byteorder='little')
             #rot = leftrotate((A + F + K[i] + mg) & 0xFFFFFFFF, S[i])
             #print((A + F + K[i] + mg) & 0xFFFFFFFF, rot)
@@ -68,6 +82,7 @@ def sha1(message, rounds = 80):
         #print(b0)
         #print(c0)
         #print(d0)
+    #print('making digest from', h0, h1, h2, h3, h4)
     digest = 0
     for x in [h0, h1, h2, h3, h4]:
         digest = digest<<32 | x

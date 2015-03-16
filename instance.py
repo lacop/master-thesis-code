@@ -184,7 +184,10 @@ class OperatorAdd(BinaryOperator):
         return False
     def printOperatorClauses(self, f):
         f.write('-{} 0\n'.format(self.carry[0]))
+        #f.write('-{} 0\n'.format(self.carry[self.size-1]))
+
         for i in range(self.size):
+        #for i in range(self.size-1, -1, -1):
             # X <-> (L ^ R ^ C) as CNF: X | ~L | ~R | ~C
             #                           X | L | R | ~C
             #                           X | L | ~R | C
@@ -208,12 +211,15 @@ class OperatorAdd(BinaryOperator):
             #                                               ~X | R | C
             #                                               ~X | L | R
             if i+1 < self.size:
-                f.write('{} {} {} 0\n'.format(self.carry[i+1], -1*self.left.vars[i], -1*self.carry[i]))
-                f.write('{} {} {} 0\n'.format(self.carry[i+1], -1*self.right.vars[i], -1*self.carry[i]))
-                f.write('{} {} {} 0\n'.format(self.carry[i+1], -1*self.left.vars[i], -1*self.right.vars[i]))
-                f.write('{} {} {} 0\n'.format(-1*self.carry[i+1], self.left.vars[i], self.carry[i]))
-                f.write('{} {} {} 0\n'.format(-1*self.carry[i+1], self.right.vars[i], self.carry[i]))
-                f.write('{} {} {} 0\n'.format(-1*self.carry[i+1], self.left.vars[i], self.right.vars[i]))
+            #if i > 0:
+                j = i+1
+                #j = i-1
+                f.write('{} {} {} 0\n'.format(self.carry[j], -1*self.left.vars[i], -1*self.carry[i]))
+                f.write('{} {} {} 0\n'.format(self.carry[j], -1*self.right.vars[i], -1*self.carry[i]))
+                f.write('{} {} {} 0\n'.format(self.carry[j], -1*self.left.vars[i], -1*self.right.vars[i]))
+                f.write('{} {} {} 0\n'.format(-1*self.carry[j], self.left.vars[i], self.carry[i]))
+                f.write('{} {} {} 0\n'.format(-1*self.carry[j], self.right.vars[i], self.carry[i]))
+                f.write('{} {} {} 0\n'.format(-1*self.carry[j], self.left.vars[i], self.right.vars[i]))
 
 
 class Instance:

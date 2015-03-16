@@ -31,18 +31,18 @@ i = Instance()
 #i.emit(H)
 #i.emit([D])
 
-A = ConstantVector([0, 0, 0, 0])
-B = ConstantVector([1, 0, 0, 0])
+A = ConstantVector([0, 1, 0, 0])
+B = ConstantVector([0, 1, 0, 0])
 #X = [A]
-for _ in range(7):
-    A = A + B
-i.emit([A])
+#for _ in range(7):
+#    A = A + B
+#i.emit([A])
 #    X.append(X[-1] + B)
 #C = X[-1]
-#C = A + B
+C = A + B
 #C.bits = [True, False]
 #D = C + B
-#i.emit([C])
+i.emit([C])
 #i.emit([D])
 #i.emit([C, D])
 
@@ -60,8 +60,8 @@ def toInt(X):
     return val
 
 print('A', A.getValuation(i), toInt(A))
-#print('B', B.getValuation(i), toInt(B))
-#print('C', C.getValuation(i), toInt(C), toInt(A)+toInt(B), (toInt(A) + toInt(B)) % 2**(len(A.bits)))
+print('B', B.getValuation(i), toInt(B))
+print('C', C.getValuation(i), toInt(C), toInt(A)+toInt(B), (toInt(A) + toInt(B)) % 2**(len(A.bits)))
 #print('D', D.getValuation(i), toInt(D))
 #print('E', E.getValuation(i))
 #print('F', F.getValuation(i))
