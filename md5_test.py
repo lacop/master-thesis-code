@@ -53,33 +53,24 @@ def md5(message, rounds = 64):
     # Append original length
     message += length.to_bytes(8, byteorder='little')
 
-    #print(len(message))
     # Split to chunks of size 64 bytes
     for pos in range(0, len(message), 64):
         chunk = message[pos:pos+64]
-        #print(pos, chunk)#import md5_test_rosetta
+
         A, B, C, D = a0, b0, c0, d0
         for i in range(rounds):
             F = fs[i//16](A, B, C, D)
             G = gs[i//16](i)
-            # M[G]
-            #print(i, F, G)
+
             mg = int.from_bytes(chunk[4*G:4*G+4], byteorder='little')
             rot = leftrotate((A + F + K[i] + mg) & 0xFFFFFFFF, S[i])
-            #print((A + F + K[i] + mg) & 0xFFFFFFFF, rot)
+
             A, B, C, D = D, (B+rot) & 0xFFFFFFFF, B, C
-            #print(A)
-            #print(B)
-            #print(C)
-            #print(D)
+
         a0 = (a0 + A) & 0xFFFFFFFF
         b0 = (b0 + B) & 0xFFFFFFFF
         c0 = (c0 + C) & 0xFFFFFFFF
         d0 = (d0 + D) & 0xFFFFFFFF
-        #print(a0)
-        #print(b0)
-        #print(c0)
-        #print(d0)
     digest = 0
     for x in [d0, c0, b0, a0]:
         digest = digest<<32 | x

@@ -1,11 +1,9 @@
 # TODO notes
-# Emit is slow - figure out why
 # Optimize - generate clauses/variables on the fly, dont keep references to left/right operands
 #            so that python runtime can GC them if not required
 #          - propagate constants, ...
 
 
-# TODO base class bit, from that make bit vectors
 class BitVector():
     def __init__(self, size):
         self.size = size
