@@ -67,7 +67,7 @@ h0, h1, h2, h3, h4 = h0+A, h1+B, h2+C, h3+D, h4+E
 # Fix message/output bits here
 
 #Mvec[0].bits = [True]*32
-h4.bits = [False]*8 + [None]*24
+#h4.bits = [False]*8 + [None]*24
 
 #######################################################
 

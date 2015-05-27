@@ -31,18 +31,27 @@ i = Instance()
 #i.emit(H)
 #i.emit([D])
 
-A = ConstantVector([0, 1, 0, 0])
-B = ConstantVector([0, 1, 0, 0])
+A = ConstantVector([0, 0, 1, 0])
+B = ConstantVector([0, 1, 1, 1])
+C = ConstantVector([0, 1, 0, 0])
+D = ConstantVector([0, 1, 1, 0])
+E = ConstantVector([0, 1, 0, 1])
+
+X = A ^ B ^ C ^ D
+
+#X = A+B+C+D+E
+i.emit([X])
+
 #X = [A]
 #for _ in range(7):
 #    A = A + B
 #i.emit([A])
 #    X.append(X[-1] + B)
 #C = X[-1]
-C = A + B
+#C = A + B
 #C.bits = [True, False]
 #D = C + B
-i.emit([C])
+#i.emit([C])
 #i.emit([D])
 #i.emit([C, D])
 
@@ -59,9 +68,23 @@ def toInt(X):
         val = val*2 + (1 if b else 0)
     return val
 
-print('A', A.getValuation(i), toInt(A))
-print('B', B.getValuation(i), toInt(B))
-print('C', C.getValuation(i), toInt(C), toInt(A)+toInt(B), (toInt(A) + toInt(B)) % 2**(len(A.bits)))
+print('A', A.getValuation(i))
+print('B', B.getValuation(i))
+print('C', C.getValuation(i))
+print('E', D.getValuation(i))
+print()
+print('X', X.getValuation(i))
+
+#print('A', A.getValuation(i), toInt(A))
+#print('B', B.getValuation(i), toInt(B))
+#print('C', C.getValuation(i), toInt(C))
+#print('D', D.getValuation(i), toInt(D))
+#print('E', E.getValuation(i), toInt(E))
+#print()
+#print('X', X.getValuation(i), toInt(X))
+#print(toInt(A) + toInt(B) + toInt(C) + toInt(D) + toInt(E))
+#print((toInt(A) + toInt(B) + toInt(C) + toInt(D) + toInt(E)) % 2**len(A.bits))
+#print('C', C.getValuation(i), toInt(C), toInt(A)+toInt(B), (toInt(A) + toInt(B)) % 2**(len(A.bits)))
 #print('D', D.getValuation(i), toInt(D))
 #print('E', E.getValuation(i))
 #print('F', F.getValuation(i))

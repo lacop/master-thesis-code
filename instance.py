@@ -122,6 +122,21 @@ class CyclicLeftShift(UnaryOperator):
             f.write('{} {} 0\n'.format(self.vars[i], -1*self.vector.vars[j]))
             f.write('{} {} 0\n'.format(-1*self.vars[i], self.vector.vars[j]))
 
+class LeftShift(UnaryOperator):
+    def __init__(self, vector, amount):
+        UnaryOperator.__init__(self, vector)
+        self.amount = amount
+    def printOperatorClauses(self, f):
+        for i in range(len(self.vars)):
+            # X <-> Y       as CNF:     X | ~Y
+            #                           ~X | Y
+            j = i-self.amount
+            if j >= 0 and j < self.size:
+                f.write('{} {} 0\n'.format(self.vars[i], -1*self.vector.vars[j]))
+                f.write('{} {} 0\n'.format(-1*self.vars[i], self.vector.vars[j]))
+            else:
+                f.write('{}\n'.format(-1*self.vars[i]))
+
 class OperatorNot(UnaryOperator):
     def printOperatorClauses(self, f):
         for i in range(len(self.vars)):
