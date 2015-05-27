@@ -1,4 +1,5 @@
 from instance import *
+from optimizers import *
 
 #A = BitVector(8)
 #B = ConstantVector([1, 0, 0, 1, 0, 1, 1, 0])
@@ -31,16 +32,34 @@ i = Instance()
 #i.emit(H)
 #i.emit([D])
 
-A = ConstantVector([0, 0, 1, 0])
-B = ConstantVector([0, 1, 1, 1])
-C = ConstantVector([0, 1, 0, 0])
-D = ConstantVector([0, 1, 1, 0])
-E = ConstantVector([0, 1, 0, 1])
+#A = ConstantVector([1, 0, 0, 0])
+#B = ConstantVector([0, 1, 0, 0])
+#C = ConstantVector([0, 0, 0, 0])
+#D = ConstantVector([0, 0, 0, 0])
 
-X = A ^ B ^ C ^ D
+#X = A | B | C | D
+#X = DefaultOrOperatorMerger.optimize(X)
+#i.emit([X])#, [DefaultOrOperatorMerger])
+
+As = []
+size = 8
+import itertools
+for v in itertools.product([0, 1], repeat=size):
+    As.append(ConstantVector(v))
+X, Y = As[0], As[0]
+for j in range(1, len(As)):
+    X = X | As[j]
+    Y = Y & As[j]
+X = DefaultOrOperatorMerger.optimize(X)
+Y = DefaultAndOperatorMerger.optimize(Y)
+i.emit([X, Y])
+
+#X = A ^ B ^ C ^ D
+
+#X = A | B | C | D
 
 #X = A+B+C+D+E
-i.emit([X])
+#i.emit([X])
 
 #X = [A]
 #for _ in range(7):
@@ -68,12 +87,13 @@ def toInt(X):
         val = val*2 + (1 if b else 0)
     return val
 
-print('A', A.getValuation(i))
-print('B', B.getValuation(i))
-print('C', C.getValuation(i))
-print('E', D.getValuation(i))
+#print('A', A.getValuation(i))
+#print('B', B.getValuation(i))
+#print('C', C.getValuation(i))
+#print('D', D.getValuation(i))
 print()
 print('X', X.getValuation(i))
+print('Y', Y.getValuation(i))
 
 #print('A', A.getValuation(i), toInt(A))
 #print('B', B.getValuation(i), toInt(B))

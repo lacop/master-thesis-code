@@ -38,6 +38,9 @@ class BitVector():
     def getValuation(self, instance):
         return [instance.getVar(self.vars[i]) for i in range(self.size)]
 
+    def getParents(self):
+        return []
+
     def __and__(self, other):
         return OperatorAnd(self, other)
     def __or__(self, other):
@@ -65,6 +68,10 @@ class BinaryOperator(BitVector):
         BitVector.__init__(self, left.size)
         self.left = left
         self.right = right
+
+    def getParents(self):
+        return [self.left, self.right]
+
     def assignVars(self, instance):
         if self.assigned:
             return
@@ -86,10 +93,40 @@ class BinaryOperator(BitVector):
     def printOperatorClauses(self, f):
         pass
 
+class NaryOperator(BitVector):
+    def __init__(self, *operands):
+        self.operands = operands
+        BitVector.__init__(self, operands[0].size)
+
+    def getParents(self):
+        return list(self.operands)
+
+    def assignVars(self, instance):
+        if self.assigned:
+            return
+        for op in self.operands:
+            op.assignVars(instance)
+        BitVector.assignVars(self, instance)
+        self.assigned = True
+    def printClauses(self, f):
+        if self.printed:
+            return
+        for op in self.operands:
+            op.printClauses(f)
+        BitVector.printClauses(self, f)
+        self.printOperatorClauses(f)
+        self.printed = True
+    def printOperatorClauses(self, f):
+        pass
+
 class UnaryOperator(BitVector):
     def __init__(self, vector):
         BitVector.__init__(self, vector.size)
         self.vector = vector
+
+    def getParents(self):
+        return [self.vector]
+
     def assignVars(self, instance):
         if self.assigned:
             return
@@ -108,7 +145,6 @@ class UnaryOperator(BitVector):
         self.printed = True
     def printOperatorClauses(self, f):
         pass
-
 
 class CyclicLeftShift(UnaryOperator):
     def __init__(self, vector, amount):
@@ -145,9 +181,32 @@ class OperatorNot(UnaryOperator):
             f.write('{} {} 0\n'.format(self.vars[i], self.vector.vars[i]))
             f.write('{} {} 0\n'.format(-1*self.vars[i], -1*self.vector.vars[i]))
 
+class OperatorOr(NaryOperator):
+    def printOperatorClauses(self, f):
+        for i in range(len(self.vars)):
+            # X <-> A1 | A2 | ... | AN as CNF: X | ~Ai for each i
+            #                                  ~X | A1 | A2 | ... | AN
+            for op in self.operands:
+                f.write('{} {} 0\n'.format(self.vars[i], -1*op.vars[i]))
+            f.write('{} '.format(-1*self.vars[i]))
+            for op in self.operands:
+                f.write('{} '.format(op.vars[i]))
+            f.write('0\n')
+
+class OperatorAnd(NaryOperator):
+    def printOperatorClauses(self, f):
+        for i in range(len(self.vars)):
+            # X <-> A1 & A2 & ... & AN as CNF: ~X | Ai for each i
+            #                                  X | ~A1 | ~A2 | ... | ~AN
+            for op in self.operands:
+                f.write('{} {} 0\n'.format(-1*self.vars[i], op.vars[i]))
+            f.write('{} '.format(self.vars[i]))
+            for op in self.operands:
+                f.write('{} '.format(-1*op.vars[i]))
+            f.write('0\n')
 
 
-class OperatorAnd(BinaryOperator):
+class BinaryOperatorAnd(BinaryOperator):
     def getBit(self, i):
         return self.left.getBit(i) & self.right.getBit(i)
     def printOperatorClauses(self, f):
@@ -159,7 +218,7 @@ class OperatorAnd(BinaryOperator):
             f.write('{} {} 0\n'.format(self.right.vars[i], -1*self.vars[i]))
             f.write('{} {} {} 0\n'.format(self.vars[i], -1*self.left.vars[i], -1*self.right.vars[i]))
 
-class OperatorOr(BinaryOperator):
+class BinaryOperatorOr(BinaryOperator):
     def getBit(self, i):
         return self.left.getBit(i) | self.right.getBit(i)
     def printOperatorClauses(self, f):
@@ -241,7 +300,13 @@ class Instance:
     def getNewVariable(self):
         self.varCount += 1
         return self.varCount
-    def emit(self, output):
+    def emit(self, output):#), optimizers=None):
+        #if optimizers:
+        #    print('Running optimizers')
+        #    # TODO run multiple times until fixpoint
+        #    for o in optimizers:
+        #        for i in range(len(output)):
+        #            output[i] = o.optimize(output[i])
         print('Setting variables...')
         for o in output:
             o.assignVars(self)
