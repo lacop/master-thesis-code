@@ -34,25 +34,33 @@ i = Instance()
 
 #A = ConstantVector([1, 0, 0, 0])
 #B = ConstantVector([0, 1, 0, 0])
-#C = ConstantVector([0, 0, 0, 0])
-#D = ConstantVector([0, 0, 0, 0])
+#C = ConstantVector([0, 1, 1, 0])
+#D = ConstantVector([1, 0, 0, 1])
 
-#X = A | B | C | D
+#Z = A ^ B ^ C ^ D
 #X = DefaultOrOperatorMerger.optimize(X)
-#i.emit([X])#, [DefaultOrOperatorMerger])
+#Z = DefaultXorOperatorMerger.optimize(Z)
+#i.emit([Z])#, [DefaultOrOperatorMerger])
+
+import sys
+sys.setrecursionlimit(10000)
 
 As = []
-size = 8
+size = 10
 import itertools
 for v in itertools.product([0, 1], repeat=size):
     As.append(ConstantVector(v))
 X, Y = As[0], As[0]
+Z = As[0]
 for j in range(1, len(As)):
     X = X | As[j]
     Y = Y & As[j]
+    Z = Z ^ As[j]
 X = DefaultOrOperatorMerger.optimize(X)
 Y = DefaultAndOperatorMerger.optimize(Y)
 i.emit([X, Y])
+#Z = DefaultXorOperatorMerger.optimize(Z)
+#i.emit([Z])
 
 #X = A ^ B ^ C ^ D
 
@@ -94,6 +102,7 @@ def toInt(X):
 print()
 print('X', X.getValuation(i))
 print('Y', Y.getValuation(i))
+#print('Z', Z.getValuation(i))
 
 #print('A', A.getValuation(i), toInt(A))
 #print('B', B.getValuation(i), toInt(B))

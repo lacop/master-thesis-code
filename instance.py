@@ -205,6 +205,18 @@ class OperatorAnd(NaryOperator):
                 f.write('{} '.format(-1*op.vars[i]))
             f.write('0\n')
 
+import itertools
+class OperatorXor(NaryOperator):
+    def printOperatorClauses(self, f):
+        for i in range(len(self.vars)):
+            # X <-> A1 ^ A2 ^ ... ^ AN as CNF:
+            for v in itertools.product([1, -1], repeat=len(self.operands)):
+                xneg = -1
+                for j in range(len(self.operands)):
+                    f.write('{} '.format(v[j]*self.operands[j].vars[i]))
+                    xneg *= v[j]
+                f.write('{} 0\n'.format(xneg*self.vars[i]))
+
 
 class BinaryOperatorAnd(BinaryOperator):
     def getBit(self, i):
@@ -230,7 +242,7 @@ class BinaryOperatorOr(BinaryOperator):
             f.write('{} {} 0\n'.format(-1*self.right.vars[i], self.vars[i]))
             f.write('{} {} {} 0\n'.format(-1*self.vars[i], self.left.vars[i], self.right.vars[i]))
 
-class OperatorXor(BinaryOperator):
+class BinaryOperatorXor(BinaryOperator):
     def getBit(self, i):
         return self.left.getBit(i) ^ self.right.getBit(i)
     def printOperatorClauses(self, f):

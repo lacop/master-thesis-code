@@ -35,7 +35,7 @@ Mvec.append(intToVector(mlength % (2**32)))
 Mvec.append(intToVector(mlength // (2**32)))
 
 # Number of rounds, full MD5 is 64
-rounds = 16
+rounds = 32
 
 a0, b0, c0, d0 = [intToVector(x) for x in [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]]
 A, B, C, D = a0, b0, c0, d0
@@ -53,7 +53,7 @@ a0, b0, c0, d0 = a0+A, b0+B, c0+C, d0+D
 
 # Fix message/output bits here
 #Mvec[0].bits = [True]*32
-a0.bits = [True]*32
+a0.bits = [True]*12
 
 ###################################################
 
