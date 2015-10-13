@@ -75,6 +75,42 @@ def md5(message, rounds = 64):
     for x in [d0, c0, b0, a0]:
         digest = digest<<32 | x
     return digest
+def md5_single_chunk(message, rounds = 64):
+    a0 = 0x67452301
+    b0 = 0xefcdab89
+    c0 = 0x98badcfe
+    d0 = 0x10325476
+
+    message = bytearray(message)
+    length = 8 * len(message)
+    assert len(message) < 56
+    # Append 1
+    message.append(0b10000000)
+
+    # Append zeroes to pad
+    while len(message) != 56:
+        message.append(0)
+    # Append original length
+    message += length.to_bytes(8, byteorder='little')
+
+    A, B, C, D = a0, b0, c0, d0
+    for i in range(rounds):
+        F = fs[i//16](A, B, C, D)
+        G = gs[i//16](i)
+
+        mg = int.from_bytes(message[4*G:4*G+4], byteorder='little')
+        rot = leftrotate((A + F + K[i] + mg) & 0xFFFFFFFF, S[i])
+
+        A, B, C, D = D, (B+rot) & 0xFFFFFFFF, B, C
+
+    a0 = (a0 + A) & 0xFFFFFFFF
+    b0 = (b0 + B) & 0xFFFFFFFF
+    c0 = (c0 + C) & 0xFFFFFFFF
+    d0 = (d0 + D) & 0xFFFFFFFF
+    digest = 0
+    for x in [d0, c0, b0, a0]:
+        digest = digest<<32 | x
+    return digest
 
 
 def digest_to_hex(digest):
@@ -86,3 +122,5 @@ if __name__ == '__main__':
     assert digest_to_hex(md5(b'The quick brown fox jumps over the lazy dog.')) == 'e4d909c290d0fb1ca068ffaddf22cbd0'
     print(digest_to_hex(md5(b'')))
     print(md5(b""))
+
+    assert md5(b'The quick brown fox jumps over the lazy dog') == md5_single_chunk(b'The quick brown fox jumps over the lazy dog')
