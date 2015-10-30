@@ -6,19 +6,26 @@ from subprocess import call
 hash_functions = {
     'sha1': {
         'rounds': 80,
+        'output_len': 160,
         'functions': [
             SHA1_create_message,
             SHA1_run,
             SHA1_print_and_verify,
-        ]
+        ],
+        'msgindex': (lambda i: (i//32, 31 - i%32)),
+        'outindex': (lambda i: (i//32, 31 - i%32)),
     },
     'md5': {
         'rounds': 64,
+        'output_len': 128,
         'functions': [
             MD5_create_message,
             MD5_run,
             MD5_print_and_verify,
-        ]
+        ],
+        'msgindex': (lambda i: (i//32, i%32)),
+        'outindex': (lambda i: (i//32, i%32)),
+
     }
 }
 
@@ -26,8 +33,10 @@ hash_functions = {
 @click.option('--hash_name', '-h', default='sha1')
 @click.option('--message_len', '-l', default=8*8)
 @click.option('--rounds', '-r', default=-1)
+@click.option('--input-fix', '-i', default='')
+@click.option('--output-fix', '-o', default='')
 @click.option('--sat_cmd', '-s', default='minisat')
-def main(hash_name, message_len, rounds, sat_cmd):
+def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd):
     if hash_name not in hash_functions:
         print('Unsupported hash function')
         return
@@ -39,6 +48,16 @@ def main(hash_name, message_len, rounds, sat_cmd):
     instance = Instance()
     msg = hash['functions'][0](message_len)
     out = hash['functions'][1](msg, rounds)
+
+    for i in range(min(message_len, len(input_fix))):
+        if input_fix[i] != '?':
+            x, y = hash['msgindex'](i)
+            msg[x].bits[y] = input_fix[i] == '1'
+    for i in range(min(hash['output_len'], len(output_fix))):
+        if output_fix[i] != '?':
+            x, y = hash['outindex'](i)
+            out[x].bits[y] = output_fix[i] == '1'
+
 
     instance.emit(msg + out)
     call([sat_cmd, 'instance.cnf', 'instance.out'])
