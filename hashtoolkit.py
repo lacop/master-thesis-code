@@ -1,7 +1,7 @@
 from instance import *
 from hashes import *
 import click
-from subprocess import call
+from subprocess import Popen, PIPE, call
 
 hash_functions = {
     'sha1': {
@@ -37,6 +37,9 @@ hash_functions = {
 @click.option('--output-fix', '-o', default='')
 @click.option('--sat_cmd', '-s', default='minisat')
 def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd):
+    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, True)
+
+def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call=False):
     if hash_name not in hash_functions:
         print('Unsupported hash function')
         return
@@ -60,10 +63,17 @@ def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd):
 
 
     instance.emit(msg + out)
-    call([sat_cmd, 'instance.cnf', 'instance.out'])
+    if use_call:
+        call([sat_cmd, 'instance.cnf', 'instance.out'])
+        stdout = None
+    else:
+        p = Popen([sat_cmd, 'instance.cnf', 'instance.out'], stdout=PIPE)
+        stdout, _ = p.communicate()
     instance.read('instance.out')
 
     hash['functions'][2](instance, msg, out, message_len, rounds)
+
+    return stdout
 
 if __name__ == '__main__':
     main()
