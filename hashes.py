@@ -65,7 +65,7 @@ def MD5_print_and_verify(instance, Mvec, digest, mlength, rounds):
     print ('Message bytes:', message, 'rounds: ', rounds)
 
     reference = md5_test.md5(message, rounds=rounds)
-    print('MD5   ', reference, md5_test.digest_to_hex(reference))
+    print('MD5   ', reference, md5_test.digest_to_hex(reference).zfill(32))
     assert reference == toInt(Dbits)
     print('MATCH!')
 
@@ -125,6 +125,6 @@ def SHA1_print_and_verify(instance, Mvec, digest, mlength, rounds):
     print ('Message bytes:', message, 'rounds: ', rounds)
 
     reference = sha1_test.sha1(message, rounds=rounds)
-    print('sha1  ', reference, '  ', sha1_test.digest_to_hex(reference))
+    print('sha1  ', reference, '  ', sha1_test.digest_to_hex(reference).zfill(40))
     assert reference == toInt(Dbits)
     print('MATCH!')
