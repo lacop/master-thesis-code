@@ -2,6 +2,7 @@ from instance import *
 from hashes import *
 import click
 from subprocess import Popen, PIPE, call
+import optimizers
 
 hash_functions = {
     'sha1': {
@@ -61,6 +62,8 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
             x, y = hash['outindex'](i)
             out[x].bits[y] = output_fix[i] == '1'
 
+
+    # TODO merge xor clauses
 
     instance.emit(msg + out)
     if use_call:

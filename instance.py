@@ -205,17 +205,32 @@ class OperatorAnd(NaryOperator):
                 f.write('{} '.format(-1*op.vars[i]))
             f.write('0\n')
 
+xorcnt = 0
+
 import itertools
 class OperatorXor(NaryOperator):
     def printOperatorClauses(self, f):
-        for i in range(len(self.vars)):
-            # X <-> A1 ^ A2 ^ ... ^ AN as CNF:
-            for v in itertools.product([1, -1], repeat=len(self.operands)):
-                xneg = -1
+        #print(len(self.operands))
+
+        # TODO mode switch
+        global xorcnt
+        #if xorcnt < 10:
+        if False:
+            xorcnt += 1
+            for i in range(len(self.vars)):
+                f.write('x{}'.format(self.vars[i]))
                 for j in range(len(self.operands)):
-                    f.write('{} '.format(v[j]*self.operands[j].vars[i]))
-                    xneg *= v[j]
-                f.write('{} 0\n'.format(xneg*self.vars[i]))
+                    f.write('{} '.format(self.operands[j].vars[i]))
+                f.write('0\n')
+        else:
+            for i in range(len(self.vars)):
+                # X <-> A1 ^ A2 ^ ... ^ AN as CNF:
+                for v in itertools.product([1, -1], repeat=len(self.operands)):
+                    xneg = -1
+                    for j in range(len(self.operands)):
+                        f.write('{} '.format(v[j]*self.operands[j].vars[i]))
+                        xneg *= v[j]
+                    f.write('{} 0\n'.format(xneg*self.vars[i]))
 
 
 class BinaryOperatorAnd(BinaryOperator):
@@ -246,6 +261,7 @@ class BinaryOperatorXor(BinaryOperator):
     def getBit(self, i):
         return self.left.getBit(i) ^ self.right.getBit(i)
     def printOperatorClauses(self, f):
+        raise Exception # TODO remove the binary variants
         for i in range(len(self.vars)):
             # X <-> L ^ R   as CNF:     X | ~L | R
             #                           X | L | ~R
@@ -330,12 +346,24 @@ class Instance:
     def read(self, path):
         self.vars = [None]*(self.varCount + 1)
         with open(path, 'r') as f:
-            f.readline()
-            for x in f.readline().strip().split():
-                v = int(x)
-                if v == 0:
-                    break
-                self.vars[abs(v)] = True if v > 0 else False
+            #f.readline()
+            for line in f.readlines():
+                #print('LINE', line[:50])
+                for x in line.strip().split():
+                    if not x.isdecimal() and (x[0] != '-' or not x[1:].isdecimal()):
+                        if x == 'v':
+                            #print('\tCONTINUE', x)
+                            continue
+                        else: # c comment / s satisfiable
+                            #print('\tIGNORE', x)
+                            break
+                    v = int(x)
+                    if v == 0:
+                        break
+                    #print('\t', abs(v), v)
+                    if abs(v) >= len(self.vars):
+                        continue # TODO really ignore?
+                    self.vars[abs(v)] = True if v > 0 else False
     def getVar(self, v):
         return self.vars[v]
     def verify(self, output):
