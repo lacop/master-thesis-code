@@ -53,6 +53,11 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
     msg = hash['functions'][0](message_len)
     out = hash['functions'][1](msg, rounds)
 
+    for i in range(len(msg)):
+        msg[i].annotation = 'Message word #' + str(i)
+    for i in range(len(out)):
+        out[i].annotation = 'Output word #' + str(i)
+
     for i in range(min(message_len, len(input_fix))):
         if input_fix[i] != '?':
             x, y = hash['msgindex'](i)
@@ -61,7 +66,6 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
         if output_fix[i] != '?':
             x, y = hash['outindex'](i)
             out[x].bits[y] = output_fix[i] == '1'
-
 
     # TODO merge xor clauses
 
@@ -75,6 +79,8 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
     instance.read('instance.out')
 
     hash['functions'][2](instance, msg, out, message_len, rounds)
+
+    instance.write_annotations('annotations.dat')
 
     return stdout
 

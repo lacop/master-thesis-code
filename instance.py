@@ -11,6 +11,7 @@ class BitVector():
         self.vars = [None]*size
         self.printed = False
         self.assigned = False
+        self.annotation = None
     def getBit(self, i):
         return self.bits[i]
     def __str__(self):
@@ -21,7 +22,7 @@ class BitVector():
         self.assigned = True
         for i in range(len(self.vars)):
             if self.vars[i] is None:
-                self.vars[i] = instance.getNewVariable()
+                self.vars[i] = instance.getNewVariable(self, i)
     def printClauses(self, f):
         if self.printed:
             return
@@ -53,6 +54,13 @@ class BitVector():
     def __invert__(self):
         return OperatorNot(self)
 
+    def getAnnotation(self, idx):
+        s = ''
+        if self.annotation:
+            s += '[[ ' + self.annotation + ' ]]\\n'
+        s += '[' + self.__class__.__name__ + ']\\n'
+        s += 'IDX:' + str(idx)
+        return s
 
 class ConstantVector(BitVector):
     def __init__(self, bits):
@@ -321,12 +329,15 @@ class OperatorAdd(BinaryOperator):
                 f.write('{} {} {} 0\n'.format(-1*self.carry[j], self.right.vars[i], self.carry[i]))
                 f.write('{} {} {} 0\n'.format(-1*self.carry[j], self.left.vars[i], self.right.vars[i]))
 
+import pickle
 
 class Instance:
     def __init__(self):
         self.varCount = 0
-    def getNewVariable(self):
+        self.varmap = {}
+    def getNewVariable(self, node, idx):
         self.varCount += 1
+        self.varmap[self.varCount] = node, idx
         return self.varCount
     def emit(self, output):#), optimizers=None):
         #if optimizers:
@@ -368,3 +379,10 @@ class Instance:
         return self.vars[v]
     def verify(self, output):
         output.verify(self)
+    def write_annotations(self, path):
+        data = {}
+        for k, v in self.varmap.items():
+            node, idx = v
+            data[k] = node.getAnnotation(idx)
+        with open(path, 'wb') as f:
+            f.write(pickle.dumps(data))
