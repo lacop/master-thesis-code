@@ -9,7 +9,9 @@ def intToVector(x, size=32):
         bits[i] = (x % 2 == 1)
         i += 1
         x //= 2
-    return ConstantVector(bits)
+    vec = ConstantVector(bits)
+    vec.annotation = 'Constant vector ' + str(x)
+    return vec
 # Little-endian bit list to int
 def toInt(bits):
     val = 0
@@ -69,6 +71,8 @@ def MD5_print_and_verify(instance, Mvec, digest, mlength, rounds):
     assert reference == toInt(Dbits)
     print('MATCH!')
 
+# TODO generalize, annotate all hash functions
+
 def SHA1_create_message(mlength):
     # For now just single block/chunk of 64bytes,
     # 14 blocks for data + padding, 2 blocks for length
@@ -97,9 +101,16 @@ def SHA1_run(message, rounds):
     for i in range(rounds):
         F = sha1_test.fs[i//20](A, B, C, D, E)
         k = Kvec[i//20]
+        F.annotation = 'Round #'+str(i)+' round function F'
 
         T = CyclicLeftShift(A, 5) + F + E + k + message[i]
+        T.annotation = 'Round #'+str(i)+' sum T'
         A, B, C, D, E = T, A, CyclicLeftShift(B, 30), C, D
+        A.annotation = 'Round #'+str(i)+' output A'
+        B.annotation = 'Round #'+str(i)+' output B'
+        C.annotation = 'Round #'+str(i)+' output C'
+        D.annotation = 'Round #'+str(i)+' output D'
+        E.annotation = 'Round #'+str(i)+' output E'
     h0, h1, h2, h3, h4 = h0+A, h1+B, h2+C, h3+D, h4+E
     return [h0, h1, h2, h3, h4]
 

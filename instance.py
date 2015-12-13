@@ -60,6 +60,8 @@ class BitVector():
             s += '[[ ' + self.annotation + ' ]]\\n'
         s += '[' + self.__class__.__name__ + ']\\n'
         s += 'IDX:' + str(idx)
+        if isinstance(self, NaryOperator):
+            s += '\\n' + ' '.join(str(x.vars[idx]) for x in self.operands) + '\\n'
         return s
 
 class ConstantVector(BitVector):
