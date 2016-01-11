@@ -45,22 +45,31 @@ i = Instance()
 import sys
 sys.setrecursionlimit(10000)
 
-As = []
-size = 10
-import itertools
-for v in itertools.product([0, 1], repeat=size):
-    As.append(ConstantVector(v))
-X, Y = As[0], As[0]
-Z = As[0]
-for j in range(1, len(As)):
-    X = X | As[j]
-    Y = Y & As[j]
-    Z = Z ^ As[j]
-X = DefaultOrOperatorMerger.optimize(X)
-Y = DefaultAndOperatorMerger.optimize(Y)
-i.emit([X, Y])
+#As = []
+#size = 10
+#import itertools
+#for v in itertools.product([0, 1], repeat=size):
+#    As.append(ConstantVector(v))
+#X, Y = As[0], As[0]
+#Z = As[0]
+#for j in range(1, len(As)):
+#    X = X | As[j]
+#    Y = Y & As[j]
+#    Z = Z ^ As[j]
+#X = DefaultOrOperatorMerger.optimize(X)
+#Y = DefaultAndOperatorMerger.optimize(Y)
+#i.emit([X, Y])
 #Z = DefaultXorOperatorMerger.optimize(Z)
 #i.emit([Z])
+
+B = BitVector(1)
+C = BitVector(1)
+D = BitVector(1)
+
+F = (B & C) | (~B & D)
+
+i.emit([B, C, D, F])
+
 
 #X = A ^ B ^ C ^ D
 
@@ -96,12 +105,13 @@ def toInt(X):
     return val
 
 #print('A', A.getValuation(i))
-#print('B', B.getValuation(i))
-#print('C', C.getValuation(i))
-#print('D', D.getValuation(i))
+print('B', B.getValuation(i))
+print('C', C.getValuation(i))
+print('D', D.getValuation(i))
+print('F', F.getValuation(i))
 print()
-print('X', X.getValuation(i))
-print('Y', Y.getValuation(i))
+#print('X', X.getValuation(i))
+#print('Y', Y.getValuation(i))
 #print('Z', Z.getValuation(i))
 
 #print('A', A.getValuation(i), toInt(A))

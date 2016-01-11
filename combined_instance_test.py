@@ -3,8 +3,8 @@ from hashes import *
 
 instance = Instance()
 
-mlength = 8*8
-md5rounds = 64
+mlength = 8*32
+md5rounds = 24 #64
 sha1rounds = 80
 
 md5msg = MD5_create_message(mlength)
@@ -18,7 +18,8 @@ md5out2 = MD5_run(md5msg2, md5rounds)
 outxor = []
 for i in range(len(md5out)):
     outxor.append(md5out[i] ^ md5out2[i])
-outxor[0].bits = [False]*16 + [None]*16
+outxor[0].bits = [False]*24 + [None]*6
+outxor[-1].bits = [None]*6 + [False]*24
 
 instance.emit(md5msg + md5out + md5msg2 + md5out2 + outxor)
 #instance.emit(sh1msg + sha1out)
