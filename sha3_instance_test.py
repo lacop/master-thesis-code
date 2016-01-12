@@ -22,16 +22,37 @@ def toHexInt(bits):
 
 ##########
 
-S = [[intToVector(0, 64) for _ in range(5)] for _ in range(5)]
-
-# TODO padding/...
 # TODO flexible, these are sha3-512 settings
 r = 576
 n = 512
 c = 1024
 nr = 24
-# TODO make this bitvector
-P = '060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080'
+sfx = 0x06
+w = 64 # TODO
+
+msglen = 8 # In bits
+
+# Initial empty state
+S = [[intToVector(0, 64) for _ in range(5)] for _ in range(5)]
+
+# TODO support longer messages (multiple vectors)
+P = [BitVector(64)]
+spos = msglen
+while sfx != 1:
+    # TODO support when suffix needs to go to new vector
+    P[-1].bits[spos] = sfx % 2
+    sfx //= 2
+    spos += 1
+
+# TODO proper padding
+P[-1].bits[spos] = True
+spos += 1
+while spos < w:
+    P[-1].bits[spos] = False
+    spos += 1
+for _ in range(7):
+    P.append(intToVector(0, 64))
+P.append(intToVector(9223372036854775808, 64))
 
 def rounds():
     global S
@@ -59,14 +80,25 @@ def rounds():
 
         S[0][0] = S[0][0] ^ rc
 
-
 # Absorb
-for i in range((len(P)*8//2)//r):
+for i in range(len(P)*64//r):
+    print(i)
     # TODO get from blok of P
-    pi = [[6, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 9223372036854775808, 0, 0, 0], [0, 0, 0, 0, 0]]
+    #pi = [[6, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 9223372036854775808, 0, 0, 0], [0, 0, 0, 0, 0]]
+    #PP = P + '00'*(c//8)
     for y in range(5):
         for x in range(5):
-            S[x][y] = S[x][y] ^ intToVector(pi[x][y], 64)
+            #S[x][y] = S[x][y] ^ intToVector(pi[x][y], 64)
+            #q = int(PP[2*((5*y+x)*w)//8:][:2*w//8], 16)
+            #S[x][y] = S[x][y] ^ intToVector(q, 64)
+            idx = 5*y + x
+            if idx < len(P):
+                S[x][y] = S[x][y] ^ P[idx]
+            #if not q == pi[x][y]:
+            #    print(q, pi[x][y])
+            #    print(x,y)
+            #    print(PP[2*((5*y+x)*w)//8:][:2*w//8])
+            #    assert False
     rounds()
 
 # Squeeze
@@ -76,22 +108,34 @@ for y in range(5):
     for x in range(5):
         out.append(S[x][y])
 
+# Input message fixing
+P[0].bits[:8] = [False, False, False, True, True, True, False, False] #0x38
+
 # SOLVE
 #rel = []
 #for y in range(5):
 #    for x in range(5):
 #        rel.append(S[x][y])
 #instance.emit(rel)
-instance.emit(out)
+instance.emit(out + P)
 from subprocess import call
 call(['minisat', 'instance.cnf', 'instance.out'])
 instance.read('instance.out')
 
+# Test
+print(P[i].getValuation(instance)[:msglen])
+print(toInt(P[i].getValuation(instance)[:msglen]))
+print(toHexInt(P[i].getValuation(instance)[:msglen]))
+for i in range(len(P)):
+    print(i, toHexInt(P[i].getValuation(instance)))
+#    print(i, toHexInt(P[i].getValuation(instance)), toInt(P[i].getValuation(instance)), P[i].getValuation(instance))
+
+for y in range(5):
+    for x in range(5):
+        print(toHexInt(S[x][y].getValuation(instance)), '\t', end='')
+    print()
+
 # Output/verify
-#for y in range(5):
-#    for x in range(5):
-#        print(toHexInt(S[x][y].getValuation(instance)), '\t', end='')
-#    print()
 digest = ''
 for q in out:
     dx = toHexInt(q.getValuation(instance))[2:]
@@ -100,4 +144,6 @@ for q in out:
 digest = digest[:2*n//8]
 print(digest)
 
-assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
+#assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
+assert digest.upper() == 'F30E8484FA863883156C517514C4E2A9096EC6009F40EBFB9F00666EC58E52E50E64F9074C9182A325A21CC99516B155560F8C48BE28F11F2EE73F6945FF7563'
+print('SUCCESS digest match')

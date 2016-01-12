@@ -105,6 +105,7 @@ class Keccak:
         for i in range(nrBytes):
             offset=(nrBytes-i-1)*2
             temp+=string[offset:offset+2]
+        print(string, '->', temp, int(temp, 16))
         return int(temp, 16)
 
     def fromLaneToHexString(self, lane):
@@ -324,6 +325,7 @@ class Keccak:
             else:
                 my_byte=int(my_string[nr_bytes_filled*2:nr_bytes_filled*2+2],16)
             my_byte=my_byte+2**(nbr_bits_filled)
+            print('nr/nbr', nr_bytes_filled, nbr_bits_filled, 'my', my_byte)
             my_byte="%02X" % my_byte
             my_string=my_string[0:nr_bytes_filled*2]+my_byte
             while((8*len(my_string)//2)%n < (n-8)):
