@@ -34,7 +34,7 @@ Kvec = [intToVector(x) for x in K]
 
 #################### CONFIGURATION ####################
 # Original message length in bits
-mlength = 0 # 16*8
+mlength = 32 # 16*8
 # Number of rounds, full SHA256 is 64
 rounds = 64
 
@@ -90,7 +90,7 @@ h0, h1, h2, h3, h4, h5, h6, h7 = h0+A, h1+B, h2+C, h3+D, h4+E, h5+F, h6+G, h7+H
 # Fix message/output bits here
 
 #Mvec[0].bits = [True]*32
-#h4.bits = [False]*8 + [None]*24
+h0.bits = [False]*8 + [None]*24
 
 #######################################################
 

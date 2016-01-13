@@ -105,7 +105,7 @@ class Keccak:
         for i in range(nrBytes):
             offset=(nrBytes-i-1)*2
             temp+=string[offset:offset+2]
-        print(string, '->', temp, int(temp, 16))
+        #print(string, '->', temp, int(temp, 16))
         return int(temp, 16)
 
     def fromLaneToHexString(self, lane):
@@ -325,7 +325,7 @@ class Keccak:
             else:
                 my_byte=int(my_string[nr_bytes_filled*2:nr_bytes_filled*2+2],16)
             my_byte=my_byte+2**(nbr_bits_filled)
-            print('nr/nbr', nr_bytes_filled, nbr_bits_filled, 'my', my_byte)
+            #print('nr/nbr', nr_bytes_filled, nbr_bits_filled, 'my', my_byte)
             my_byte="%02X" % my_byte
             my_string=my_string[0:nr_bytes_filled*2]+my_byte
             while((8*len(my_string)//2)%n < (n-8)):
@@ -379,7 +379,7 @@ class Keccak:
         #Absorbing phase
         for i in range((len(P)*8//2)//r):
             Pi=self.convertStrToTable(P[i*(2*r//8):(i+1)*(2*r//8)]+'00'*(c//8))
-            print('P'+str(i)+' = ', Pi)
+            #print('P'+str(i)+' = ', Pi)
             for y in range(5):
               for x in range(5):
                   S[x][y] = S[x][y]^Pi[x][y]
