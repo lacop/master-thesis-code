@@ -40,14 +40,21 @@ def bitsToHex(bits):
 ##########
 
 # Hash function configuration
+#r, c, sfx, n = , , 0x06,  # SHA3-224
+#r, c, sfx, n = 1088, 512, 0x06, 256 # SHA3-256
+#r, c, sfx, n = , , 0x06,  # SHA3-384
 r, c, sfx, n = 576, 1024, 0x06, 512 # SHA3-512
-
+# TODO fix values ^ and make padding work with all
 msglen = 32 # In bits
-msgbits = [None]*msglen
-#msgbits = [False, False, False, True, True, True, False, False] #0x38
 
-outbits = [None] * n
-outbits[:8] = [False]*8
+# Don't change
+msgbits = [None]*msglen
+outbits = [None]*n
+
+# Message/digest bit config
+#msgbits = [False, False, False, True, True, True, False, False] #0x38
+#outbits[:8] = [False]*8
+#msgbits = []
 
 ############
 
