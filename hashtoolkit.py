@@ -59,6 +59,7 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
     for i in range(len(out)):
         out[i].annotation = 'Output word #' + str(i)
 
+    # TODO fixable seed for reference message?
     refmsg, refdigest, refbits = hash['functions'][3](message_len, rounds)
     for i in range(min(message_len, len(input_fix))):
         if input_fix[i] != '?':
@@ -87,10 +88,6 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
 
     hash['functions'][2](instance, msg, out, message_len, rounds)
     instance.write_annotations('annotations.dat')
-
-    #print(refbits)
-    #for i in range(len(out)):
-    #    print(out[i].getValuation(instance))
 
     return stdout
 
