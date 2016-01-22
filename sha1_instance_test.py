@@ -28,9 +28,9 @@ Kvec = [intToVector(x) for x in K]
 
 #################### CONFIGURATION ####################
 # Original message length in bits
-mlength = 8*2
+mlength = 8*4
 # Number of rounds, full SHA1 is 80
-rounds = 20
+rounds = 80
 
 ###################### ENCODING #######################
 
@@ -54,6 +54,8 @@ for i in range(16, 80):
 
 h0, h1, h2, h3, h4 = [intToVector(x) for x in [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]]
 
+roundvars = []
+
 A, B, C, D, E = h0, h1, h2, h3, h4
 for i in range(rounds):
     F = fs[i//20](A, B, C, D, E)
@@ -61,6 +63,7 @@ for i in range(rounds):
 
     T = CyclicLeftShift(A, 5) + F + E + k + Mvec[i]
     A, B, C, D, E = T, A, CyclicLeftShift(B, 30), C, D
+    roundvars.append((A, B, C, D, E))
 h0, h1, h2, h3, h4 = h0+A, h1+B, h2+C, h3+D, h4+E
 
 #################### CONFIGURATION ####################
@@ -74,9 +77,19 @@ h0, h1, h2, h3, h4 = h0+A, h1+B, h2+C, h3+D, h4+E
 # TODO prettier
 # Generate CNF instance, solve, read
 print('Emit start')
+instance.assignVars([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
+
+# Branching order
+#instance.branch(roundvars[0][0].vars)
+#for rv in roundvars[::-1]:
+for rv in roundvars[::2]:
+    for v in rv:
+        instance.branch(v.vars)
+
 instance.emit([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
 from subprocess import call
-call(['minisat', 'instance.cnf', 'instance.out'])
+#call(['minisat', 'instance.cnf', 'instance.out'])
+call(['./cmsrun.sh', 'instance.cnf', 'instance.out'])
 instance.read('instance.out')
 
 # Get message bits

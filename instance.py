@@ -337,10 +337,15 @@ class Instance:
     def __init__(self):
         self.varCount = 0
         self.varmap = {}
+        self.branches = []
     def getNewVariable(self, node, idx):
         self.varCount += 1
         self.varmap[self.varCount] = node, idx
         return self.varCount
+    def assignVars(self, output):
+        print('Setting variables...')
+        for o in output:
+            o.assignVars(self)
     def emit(self, output):#), optimizers=None):
         #if optimizers:
         #    print('Running optimizers')
@@ -348,11 +353,12 @@ class Instance:
         #    for o in optimizers:
         #        for i in range(len(output)):
         #            output[i] = o.optimize(output[i])
-        print('Setting variables...')
-        for o in output:
-            o.assignVars(self)
+        if self.varCount == 0:
+            self.assignVars(output)
         f = open('instance.cnf', 'w')
         print('Generating clauses...')
+        for b in self.branches:
+            f.write('b {} 0\n'.format(b)) # TODO support groups
         for o in output:
             o.printClauses(f)
         f.close()
@@ -388,3 +394,7 @@ class Instance:
             data[k] = node.getAnnotation(idx)
         with open(path, 'wb') as f:
             f.write(pickle.dumps(data))
+
+    def branch(self, vars):
+        for var in vars:
+            self.branches.append(var)  # TODO support groups
