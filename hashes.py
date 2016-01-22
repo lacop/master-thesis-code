@@ -1,6 +1,7 @@
 from instance import *
 import md5_test
 import sha1_test
+import random
 
 def intToVector(x, size=32):
     bits = [False]*size
@@ -125,7 +126,7 @@ def SHA1_print_and_verify(instance, Mvec, digest, mlength, rounds):
     Dbits = []
     for q in digest[::-1]:
         Dbits += q.getValuation(instance)
-    print('Digest', toInt(Dbits)) #, Dbits)
+    print('Digest', str(toInt(Dbits)).zfill(50)) #, Dbits)
 
     # Assume 8bit multiple length, generate message
     # Then test with reference implementation for match
@@ -136,6 +137,19 @@ def SHA1_print_and_verify(instance, Mvec, digest, mlength, rounds):
     print ('Message bytes:', message, 'rounds: ', rounds)
 
     reference = sha1_test.sha1(message, rounds=rounds)
-    print('sha1  ', reference, '  ', sha1_test.digest_to_hex(reference).zfill(40))
+    print('sha1  ', str(reference).zfill(50), '  ', sha1_test.digest_to_hex(reference))
     assert reference == toInt(Dbits)
     print('MATCH!')
+
+def SHA1_random_ref(mlength, rounds):
+    assert mlength % 8 == 0
+
+    msg = bytes([random.randint(0, 255) for _ in range(mlength//8)])
+    ref = sha1_test.sha1(msg, rounds=rounds)
+    digest = sha1_test.digest_to_hex(ref)
+
+    bits = []
+    while ref > 0 or len(bits) < 160:
+        bits.append(ref % 2 == 1)
+        ref //= 2
+    return msg,digest,bits[::-1]

@@ -12,6 +12,7 @@ hash_functions = {
             SHA1_create_message,
             SHA1_run,
             SHA1_print_and_verify,
+            SHA1_random_ref,
         ],
         'msgindex': (lambda i: (i//32, 31 - i%32)),
         'outindex': (lambda i: (i//32, 31 - i%32)),
@@ -58,6 +59,7 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
     for i in range(len(out)):
         out[i].annotation = 'Output word #' + str(i)
 
+    refmsg, refdigest, refbits = hash['functions'][3](message_len, rounds)
     for i in range(min(message_len, len(input_fix))):
         if input_fix[i] != '?':
             x, y = hash['msgindex'](i)
@@ -65,9 +67,12 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
     for i in range(min(hash['output_len'], len(output_fix))):
         if output_fix[i] != '?':
             x, y = hash['outindex'](i)
-            out[x].bits[y] = output_fix[i] == '1'
+            if output_fix[i] in ['0', '1']:
+                out[x].bits[y] = output_fix[i] == '1'
+            else:
+                out[x].bits[y] = refbits[i]
 
-    # TODO merge xor clauses
+    # TODO merge xor clauses / other optimizations
 
     instance.emit(msg + out)
     if use_call:
@@ -78,9 +83,14 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
         stdout, _ = p.communicate()
     instance.read('instance.out')
 
-    hash['functions'][2](instance, msg, out, message_len, rounds)
+    print('Reference message:', refmsg, ' '*max(0, 22-len(str(refmsg))), 'Reference digest:', refdigest)
 
+    hash['functions'][2](instance, msg, out, message_len, rounds)
     instance.write_annotations('annotations.dat')
+
+    #print(refbits)
+    #for i in range(len(out)):
+    #    print(out[i].getValuation(instance))
 
     return stdout
 

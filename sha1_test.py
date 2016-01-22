@@ -59,7 +59,7 @@ def sha1(message, rounds = 80):
 
 
 def digest_to_hex(digest):
-    return '{:032x}'.format(digest)
+    return '{:040x}'.format(digest)
 
 if __name__ == '__main__':
     assert digest_to_hex(sha1(b'')) == 'da39a3ee5e6b4b0d3255bfef95601890afd80709'

@@ -28,7 +28,7 @@ Kvec = [intToVector(x) for x in K]
 
 #################### CONFIGURATION ####################
 # Original message length in bits
-mlength = 16*8
+mlength = 8*2
 # Number of rounds, full SHA1 is 80
 rounds = 20
 
