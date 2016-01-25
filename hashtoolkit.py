@@ -38,10 +38,11 @@ hash_functions = {
 @click.option('--input-fix', '-i', default='')
 @click.option('--output-fix', '-o', default='')
 @click.option('--sat_cmd', '-s', default='minisat')
-def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd):
-    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, True)
+@click.option('--out-file', '-f', default='')
+def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file):
+    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file, out_file == '')
 
-def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call=False):
+def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file, use_call=False):
     if hash_name not in hash_functions:
         print('Unsupported hash function')
         return
@@ -88,6 +89,22 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, use_call
 
     hash['functions'][2](instance, msg, out, message_len, rounds)
     instance.write_annotations('annotations.dat')
+
+    if stdout and out_file:
+        time = None
+        for line in stdout.decode().split('\n'):
+            if line.strip().startswith('c Total time'):
+                time = line.split(':')[1].strip()
+                break
+        if time is None:
+            print('Could not find time')
+            return
+        with open(out_file, 'a') as f:
+            # Write header
+            if f.tell() == 0:
+                f.write('rounds,time\n')
+            f.write('{},{}\n'.format(rounds, time))
+        print('Added record for rounds=', str(rounds), 'time=', time)
 
     return stdout
 

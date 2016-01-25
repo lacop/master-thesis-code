@@ -30,7 +30,7 @@ Kvec = [intToVector(x) for x in K]
 # Original message length in bits
 mlength = 8*4
 # Number of rounds, full SHA1 is 80
-rounds = 80
+rounds = 10
 
 ###################### ENCODING #######################
 
@@ -82,7 +82,7 @@ instance.assignVars([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
 # Branching order
 #instance.branch(roundvars[0][0].vars)
 #for rv in roundvars[::-1]:
-for rv in roundvars[::2]:
+for rv in roundvars:
     for v in rv:
         instance.branch(v.vars)
 
