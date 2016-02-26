@@ -398,3 +398,18 @@ class Instance:
     def branch(self, vars):
         for var in vars:
             self.branches.append(var)  # TODO support groups
+
+    def solve(self, sat_cmd):
+        from subprocess import Popen, PIPE
+        import sys
+        p = Popen([sat_cmd, 'instance.cnf', 'instance.out'], stdout=PIPE)
+        #stdout, _ = p.communicate()
+        time = None
+        for line in iter(p.stdout.readline, b""):
+            line = line.decode()
+            sys.stdout.write(line)
+            if line.strip().startswith('c Total time'):
+                time = line.split(':')[1].strip()
+                break
+        self.read('instance.out')
+        return {'time': time}

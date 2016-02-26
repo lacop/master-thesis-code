@@ -1,10 +1,11 @@
 library(data.table)
 library(boot)
 
-replicates = 1000
+replicates = 1000 # TODO research proper values
+filename = 'sha1-32bit-out8bitREF.csv'
 
 #raw_data = read.csv('sha1-16bit-nores.csv')
-raw_data = read.csv('sha1-32bit-out8bitREF.csv')
+raw_data = read.csv(filename)
 # Columns
 #  - rounds     number of rounds
 #  - time       time to solve
@@ -39,12 +40,12 @@ for(r in groupped$rounds) {
 }
 
 plot(x = 1,
-     #log = "y",
+     log = "y",
      xlim = range(groupped$rounds),
      ylim = range(groupped$ci_low, groupped$ci_high),
      xlab = "Number of rounds",
      ylab = "Time [seconds]",
-     main = "Time to solve",
+     main = paste("Solving time vs. #rounds [", filename, "]", sep=""),
      type = "n",
      xaxt = "n")
 axis(side = 1,
