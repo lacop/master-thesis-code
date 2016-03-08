@@ -21,10 +21,14 @@ def toInt(bits):
 def toIntBE(bits):
     return toInt(bits[::-1])
 
-#fs = [OptimizeExpression(lambda a, b, c, d, e: (b & c) ^ (~b & d)),]
-      #lambda a, b, c, d, e: b ^ c ^ d,
-      #lambda a, b, c, d, e: (b & c) | (b & d) | (c & d),
-      #lambda a, b, c, d, e: b ^ c ^ d]
+r1 = OptimizeExpression(lambda b, c, d: (b & c) ^ (~b & d))
+r24 = lambda b, c, d: b^c^d
+r3 = OptimizeExpression(lambda b, c, d: (b & c) ^ (b & d) ^ (c & d))
+#r3 = lambda b, c, d: (b & c) ^ (b & d) ^ (c & d)
+fs = [lambda a, b, c, d, e: r1(b, c, d),
+      lambda a, b, c, d, e: r24(b, c, d),
+      lambda a, b, c, d, e: r3(b, c, d),
+      lambda a, b, c, d, e: r24(b, c, d)]
 
 def main(mlength = None, rounds = None, out_file = None):
     instance = Instance()
@@ -36,7 +40,7 @@ def main(mlength = None, rounds = None, out_file = None):
         mlength = 8*4
     # Number of rounds, full SHA1 is 80
     if rounds is None:
-        rounds = 20
+        rounds = 80
 
     ###################### ENCODING #######################
 
@@ -76,7 +80,7 @@ def main(mlength = None, rounds = None, out_file = None):
     # Fix message/output bits here
 
     #Mvec[0].bits = [True]*32
-    h4.bits = [False]*8 + [None]*24
+    #h4.bits = [False]*8 + [None]*24
 
     #######################################################
 
@@ -96,8 +100,8 @@ def main(mlength = None, rounds = None, out_file = None):
     #         instance.branch(v.vars)
 
     instance.emit([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
-    stats = instance.solve('./cmsrunq.sh')
-    #stats = instance.solve('minisat')
+    #stats = instance.solve('./cmsrunq.sh')
+    stats = instance.solve('minisat')
     #from subprocess import call
     #call(['minisat', 'instance.cnf', 'instance.out'])
     #call(['./cmsrun.sh', 'instance.cnf', 'instance.out'])
