@@ -1,6 +1,6 @@
 from instance import *
 from sha1_test import K, fs, sha1, digest_to_hex
-
+from optimizers import *
 
 # Little-endian
 def intToVector(x, size=32):
@@ -21,6 +21,10 @@ def toInt(bits):
 def toIntBE(bits):
     return toInt(bits[::-1])
 
+#fs = [OptimizeExpression(lambda a, b, c, d, e: (b & c) ^ (~b & d)),]
+      #lambda a, b, c, d, e: b ^ c ^ d,
+      #lambda a, b, c, d, e: (b & c) | (b & d) | (c & d),
+      #lambda a, b, c, d, e: b ^ c ^ d]
 
 def main(mlength = None, rounds = None, out_file = None):
     instance = Instance()
@@ -85,13 +89,15 @@ def main(mlength = None, rounds = None, out_file = None):
     #instance.branch(roundvars[0][0].vars)
     #for rv in roundvars[::-1]:
     #for rv in roundvars[::-1][::20]:\
-    for rv in [roundvars[-1], roundvars[-2], roundvars[-3]]:
+    #for rv in [roundvars[-1], roundvars[-2], roundvars[-3]]:
     #for rv in roundvars[::8]:
-        for v in rv:
-            instance.branch(v.vars)
+    #for rv in [roundvars[0], roundvars[3]]:
+    #     for v in [rv[4]]:
+    #         instance.branch(v.vars)
 
     instance.emit([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
     stats = instance.solve('./cmsrunq.sh')
+    #stats = instance.solve('minisat')
     #from subprocess import call
     #call(['minisat', 'instance.cnf', 'instance.out'])
     #call(['./cmsrun.sh', 'instance.cnf', 'instance.out'])
