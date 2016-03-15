@@ -46,7 +46,7 @@ def bitsToHex(bits):
 r, c, sfx, n = 576, 1024, 0x06, 512 # SHA3-512
 # TODO fix values ^ and make padding work with all
 msglen = 32 # In bits
-roundlimit = 8 # Max is 24
+roundlimit = 6 # Max is 24
 
 # Don't change
 msgbits = [None]*msglen
@@ -55,12 +55,13 @@ outbits = [None]*n
 # Message/digest bit config
 #msgbits = [False, False, False, True, True, True, False, False] #0x38
 #print(msgbits)
-#outbits[:8] = [False]*8
 #msgbits = []
 #for i in range(msglen//8): # Printable ASCII
 #    msgbits[i*8+7] = False
 #    msgbits[i*8+6] = True
 
+#outbits[:8] = [True]*4 + [False]*4
+outbits[:8] = ['ref']*8
 
 ############
 
@@ -153,9 +154,18 @@ for y in range(5):
     for x in range(5):
         out.append(S[x][y])
 
+# Generate reference digest for output bit fixing
+import random
+refout_msg = ''.join(('00'+hex(random.randint(0, 255))[2:])[-2:] for _ in range(msglen//8))
+refout_k = Keccak(roundlimit=roundlimit)
+refout_digest = refout_k.Keccak((msglen, refout_msg), r, c, sfx, n)
+
 # Fix output bits
 for i in range(n):
-    nthbit(out, i, outbits[i])
+    if outbits[i] == 'ref':
+        nthbit(out, i, int(refout_digest[(i//8)*2:(i//8)*2 + 2], 16) & (1 << (i % 8)))
+    else:
+        nthbit(out, i, outbits[i])
 
 # SOLVE
 #rel = []
@@ -168,7 +178,7 @@ instance.assignVars(out + P)
 #print(roundvars)
 
 # branching order
-for rnd in [1]:
+for rnd in []:
     for x in range(5):
         for y in range(5):
             instance.branch(roundvars[rnd][0][x][y].vars) # S
@@ -224,6 +234,9 @@ print('reference:', ref_digest)
 
 assert digest.upper() == ref_digest
 print('SUCCESS digest match')
+
+print('REFOUT message:', refout_msg)
+print('REFOUT digest :', refout_digest)
 
 #assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
 #assert digest.upper() == 'F30E8484FA863883156C517514C4E2A9096EC6009F40EBFB9F00666EC58E52E50E64F9074C9182A325A21CC99516B155560F8C48BE28F11F2EE73F6945FF7563'
