@@ -46,6 +46,7 @@ def bitsToHex(bits):
 r, c, sfx, n = 576, 1024, 0x06, 512 # SHA3-512
 # TODO fix values ^ and make padding work with all
 msglen = 32 # In bits
+roundlimit = 0 # Max is 24
 
 # Don't change
 msgbits = [None]*msglen
@@ -53,8 +54,13 @@ outbits = [None]*n
 
 # Message/digest bit config
 #msgbits = [False, False, False, True, True, True, False, False] #0x38
+#print(msgbits)
 #outbits[:8] = [False]*8
 #msgbits = []
+#for i in range(msglen//8): # Printable ASCII
+#    msgbits[i*8+7] = False
+#    msgbits[i*8+6] = True
+
 
 ############
 
@@ -67,11 +73,15 @@ b = r+c # TODO assert valid
 w = b // 25
 nr = 12 + 2*int(math.log(w, 2))
 
+if roundlimit == -1:
+    roundlimit = nr
+assert roundlimit <= nr
+
 # Initial empty state
 S = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
 
 # Input message
-P = [BitVector(w) for _ in range(math.ceil(msglen / w))]
+P = [BitVector(w) for _ in range(max(1, math.ceil(msglen / w)))]
 spos = 0
 while spos < msglen:
     nthbit(P, spos, msgbits[spos])
@@ -98,7 +108,7 @@ P.append(intToVector(9223372036854775808, 64))
 
 def rounds():
     global S
-    for i in range(nr):
+    for i in range(roundlimit):
         rc = intToVector(Keccak.RC[i], 64) # TODO truncate to w bits
         B = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
         C = [intToVector(0, w) for _ in range(5)]
@@ -150,9 +160,11 @@ for i in range(n):
 #        rel.append(S[x][y])
 #instance.emit(rel)
 instance.emit(out + P)
-from subprocess import call
-call(['minisat', 'instance.cnf', 'instance.out'])
-instance.read('instance.out')
+#from subprocess import call
+#call(['minisat', 'instance.cnf', 'instance.out'])
+#instance.read('instance.out')
+#stats = instance.solve('minisat')
+stats = instance.solve('./cmsrun.sh')
 
 # Test
 #print(P[0].getValuation(instance)[:msglen])
@@ -174,7 +186,13 @@ for i in range(msglen):
     message.append(P[i//w].getValuation(instance)[i%w])
 print('message:', message)
 msg = (msglen, bitsToHex(message))
-print('message:' , msg)
+
+mb = b''
+for i in range(msglen//8):
+    #mb += '-' + msg[1][2*i:2*i+2]
+    #mb += '-' + '/'.join([str(x) for x in P[i//w].getValuation(instance)])
+    mb += toInt(P[i*8//w].getValuation(instance)[(i*8)%w:(i*8)%w + 8]).to_bytes(1, byteorder='big')
+print('message:' , msg, mb)
 
 digest = ''
 for q in out:
@@ -185,7 +203,7 @@ digest = digest[:2*n//8]
 print('digest:   ', digest.upper())
 
 from sha3_reference import Keccak
-k = Keccak()
+k = Keccak(roundlimit=roundlimit)
 ref_digest = k.Keccak(msg, r, c, sfx, n)
 print('reference:', ref_digest)
 

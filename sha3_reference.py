@@ -27,11 +27,12 @@ class Keccak:
     """
     Class implementing the Keccak sponge function
     """
-    def __init__(self, b=1600):
+    def __init__(self, b=1600, roundlimit=None):
         """Constructor:
 
         b: parameter b, must be 25, 50, 100, 200, 400, 800 or 1600 (default value)"""
         self.setB(b)
+        self.roundlimit = roundlimit
 
     def setB(self,b):
         """Set the value of the parameter b (and thus w,l and nr)
@@ -229,7 +230,10 @@ class Keccak:
         if verbose:
             self.printState(A,"Before first round")
 
-        for i in range(self.nr):
+        nr = self.nr
+        if self.roundlimit is not None:
+            nr = self.roundlimit
+        for i in range(nr):
             #NB: result is truncated to lane size
             A = self.Round(A,self.RC[i]%(1<<self.w))
 
