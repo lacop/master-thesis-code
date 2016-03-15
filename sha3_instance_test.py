@@ -46,7 +46,7 @@ def bitsToHex(bits):
 r, c, sfx, n = 576, 1024, 0x06, 512 # SHA3-512
 # TODO fix values ^ and make padding work with all
 msglen = 32 # In bits
-roundlimit = 6 # Max is 24
+roundlimit = 12 # Max is 24
 
 # Don't change
 msgbits = [None]*msglen
@@ -156,7 +156,12 @@ for y in range(5):
 
 # Generate reference digest for output bit fixing
 import random
-refout_msg = ''.join(('00'+hex(random.randint(0, 255))[2:])[-2:] for _ in range(msglen//8))
+rnd = random.Random()
+rnd.seed(str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits)) # TODO one more external seed param, for averaging multiple different instances
+#print(rnd.randint(0, 255))
+#import sys
+#sys.exit()
+refout_msg = ''.join(('00'+hex(rnd.randint(0, 255))[2:])[-2:] for _ in range(msglen//8))
 refout_k = Keccak(roundlimit=roundlimit)
 refout_digest = refout_k.Keccak((msglen, refout_msg), r, c, sfx, n)
 
@@ -178,11 +183,19 @@ instance.assignVars(out + P)
 #print(roundvars)
 
 # branching order
-for rnd in []:
+for rnd in [0]:
     for x in range(5):
         for y in range(5):
-            instance.branch(roundvars[rnd][0][x][y].vars) # S
-            #instance.branch(roundvars[rnd][1][x][y].vars) # B
+            pass
+#            instance.branch(roundvars[rnd][1][x][y].vars) # B
+#            instance.branch(roundvars[rnd][0][x][y].vars) # S
+#        instance.branch(roundvars[rnd][2][x].vars) # C
+        instance.branch(roundvars[rnd][3][x].vars) # D
+    for y in range(5):
+        for x in range(5):
+            pass
+#            instance.branch(roundvars[rnd][0][x][y].vars) # S
+
 instance.emit(out + P)
 
 #from subprocess import call
