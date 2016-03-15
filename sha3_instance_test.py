@@ -46,7 +46,7 @@ def bitsToHex(bits):
 r, c, sfx, n = 576, 1024, 0x06, 512 # SHA3-512
 # TODO fix values ^ and make padding work with all
 msglen = 32 # In bits
-roundlimit = 0 # Max is 24
+roundlimit = 8 # Max is 24
 
 # Don't change
 msgbits = [None]*msglen
@@ -106,8 +106,10 @@ for _ in range(7):
     P.append(intToVector(0, 64))
 P.append(intToVector(9223372036854775808, 64))
 
+roundvars = []
+
 def rounds():
-    global S
+    global S, roundvars
     for i in range(roundlimit):
         rc = intToVector(Keccak.RC[i], 64) # TODO truncate to w bits
         B = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
@@ -131,6 +133,8 @@ def rounds():
                 S[x][y] = B[x][y] ^ ((~B[(x+1)%5][y]) & B[(x+2)%5][y])
 
         S[0][0] = S[0][0] ^ rc
+
+        roundvars.append(([row[:] for row in S], B, C, D))
 
 # Absorb
 for i in range(len(P)*64//r):
@@ -159,7 +163,18 @@ for i in range(n):
 #    for x in range(5):
 #        rel.append(S[x][y])
 #instance.emit(rel)
+instance.assignVars(out + P)
+
+#print(roundvars)
+
+# branching order
+for rnd in [1]:
+    for x in range(5):
+        for y in range(5):
+            instance.branch(roundvars[rnd][0][x][y].vars) # S
+            #instance.branch(roundvars[rnd][1][x][y].vars) # B
 instance.emit(out + P)
+
 #from subprocess import call
 #call(['minisat', 'instance.cnf', 'instance.out'])
 #instance.read('instance.out')
