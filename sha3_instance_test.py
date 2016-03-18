@@ -64,23 +64,35 @@ outbits = [None]*n
 #outbits[:8] = [True]*4 + [False]*4
 outbits[:8] = ['ref']*8
 
+timelimit = 60
 solver = './cmsrun.sh'
 #solver = 'minisat'
 
 def branchorder(i, rv):
     pass
-#    for rnd in []:
-#        for x in range(5):
-#            for y in range(5):
-#                pass
-#    #            i.branch(rv[rnd][1][x][y].vars) # B
-#    #            i.branch(rv[rnd][0][x][y].vars) # S
-#    #        i.branch(rv[rnd][2][x].vars) # C
-#            i.branch(rv[rnd][3][x].vars) # D
-#        for y in range(5):
-#            for x in range(5):
-#                pass
-#    #            i.branch(rv[rnd][0][x][y].vars) # S
+    for rnd in [1]:
+    # X, Y -> S[x][y]
+    #    for x in range(5):
+    #        for y in range(5):
+    #            i.branch(rv[rnd][0][x][y].vars) # S
+
+    # Y, X -> S[x][y]
+    #    for y in range(5):
+    #        for x in range(5):
+    #            i.branch(rv[rnd][0][x][y].vars) # S
+
+    # X, Y -> B[x][y]
+        for x in range(5):
+            for y in range(5):
+                i.branch(rv[rnd][1][x][y].vars) # B
+
+    # X -> D[x]
+    #    for x in range(5):
+    #        i.branch(rv[rnd][2][x].vars) # C
+
+    # X -> D[x]
+    #    for x in range(5):
+    #        i.branch(rv[rnd][3][x].vars) # D
 
 def main():
     r = []
@@ -228,7 +240,9 @@ def run_experiment(extra_seed = 0):
     #from subprocess import call
     #call(['minisat', 'instance.cnf', 'instance.out'])
     #instance.read('instance.out')
-    stats = instance.solve(solver)
+    stats = instance.solve(solver, timeout=timelimit)
+    if stats is None:
+        return None
     #stats = instance.solve('./cmsrun.sh')
 
     # Test
