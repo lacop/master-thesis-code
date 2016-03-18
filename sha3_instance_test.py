@@ -37,7 +37,8 @@ def bitsToHex(bits):
         hex += ('00' + toHexInt(bits[i:i+8])[2:])[-2:]
     return hex
 
-##########
+########################################################################################################################
+# CONFIGURATION
 
 # Hash function configuration
 #r, c, sfx, n = , , 0x06,  # SHA3-224
@@ -45,8 +46,9 @@ def bitsToHex(bits):
 #r, c, sfx, n = , , 0x06,  # SHA3-384
 r, c, sfx, n = 576, 1024, 0x06, 512 # SHA3-512
 # TODO fix values ^ and make padding work with all
+
 msglen = 32 # In bits
-roundlimit = 12 # Max is 24
+roundlimit = 6 # Max is 24
 
 # Don't change
 msgbits = [None]*msglen
@@ -63,7 +65,26 @@ outbits = [None]*n
 #outbits[:8] = [True]*4 + [False]*4
 outbits[:8] = ['ref']*8
 
-############
+solver = './cmsrun.sh'
+#solver = 'minisat'
+extra_seed = 0
+
+def branchorder(i, rv):
+    for rnd in []:
+        for x in range(5):
+            for y in range(5):
+                pass
+    #            i.branch(rv[rnd][1][x][y].vars) # B
+    #            i.branch(rv[rnd][0][x][y].vars) # S
+    #        i.branch(rv[rnd][2][x].vars) # C
+            i.branch(rv[rnd][3][x].vars) # D
+        for y in range(5):
+            for x in range(5):
+                pass
+    #            i.branch(rv[rnd][0][x][y].vars) # S
+
+
+########################################################################################################################
 
 assert r%8 == 0
 assert n%8 == 0
@@ -159,7 +180,7 @@ import random
 rnd = random.Random()
 # TODO one more external seed param, for averaging multiple different instances
 from zlib import adler32
-seedstr = str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits) + str(0)
+seedstr = str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits) + str(extra_seed)
 seed = adler32(seedstr.encode()) & 0xffffffff
 rnd.seed(seed)
 #print(rnd.randint(0, 255))
@@ -187,26 +208,14 @@ instance.assignVars(out + P)
 #print(roundvars)
 
 # branching order
-for rnd in []:
-    for x in range(5):
-        for y in range(5):
-            pass
-#            instance.branch(roundvars[rnd][1][x][y].vars) # B
-#            instance.branch(roundvars[rnd][0][x][y].vars) # S
-#        instance.branch(roundvars[rnd][2][x].vars) # C
-        instance.branch(roundvars[rnd][3][x].vars) # D
-    for y in range(5):
-        for x in range(5):
-            pass
-#            instance.branch(roundvars[rnd][0][x][y].vars) # S
-
+branchorder(instance, roundvars)
 instance.emit(out + P)
 
 print('Starting solver')
 #from subprocess import call
 #call(['minisat', 'instance.cnf', 'instance.out'])
 #instance.read('instance.out')
-stats = instance.solve('minisat')
+stats = instance.solve(solver)
 #stats = instance.solve('./cmsrun.sh')
 
 # Test
@@ -260,12 +269,15 @@ print(stats)
 #assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
 #assert digest.upper() == 'F30E8484FA863883156C517514C4E2A9096EC6009F40EBFB9F00666EC58E52E50E64F9074C9182A325A21CC99516B155560F8C48BE28F11F2EE73F6945FF7563'
 
+import inspect
 with open('stats-sha3.dat', 'a') as f:
     f.write(str({
         'seed': seed,
+        'extra_seed': extra_seed,
         'stats': stats,
         'msglen': msglen,
         'roundlimit': roundlimit,
         'msgbits': msgbits,
         'outbits': outbits,
+        'branch:': inspect.getsourcelines(branchorder)
     }) + '\n')
