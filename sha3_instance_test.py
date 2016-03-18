@@ -2,7 +2,6 @@ from instance import *
 from sha3_reference import Keccak
 import math
 
-instance = Instance()
 # Little-endian
 def intToVector(x, size=32):
     bits = [False]*size
@@ -67,217 +66,238 @@ outbits[:8] = ['ref']*8
 
 solver = './cmsrun.sh'
 #solver = 'minisat'
-extra_seed = 0
 
 def branchorder(i, rv):
-    for rnd in []:
-        for x in range(5):
-            for y in range(5):
-                pass
-    #            i.branch(rv[rnd][1][x][y].vars) # B
-    #            i.branch(rv[rnd][0][x][y].vars) # S
-    #        i.branch(rv[rnd][2][x].vars) # C
-            i.branch(rv[rnd][3][x].vars) # D
-        for y in range(5):
-            for x in range(5):
-                pass
-    #            i.branch(rv[rnd][0][x][y].vars) # S
+    pass
+#    for rnd in []:
+#        for x in range(5):
+#            for y in range(5):
+#                pass
+#    #            i.branch(rv[rnd][1][x][y].vars) # B
+#    #            i.branch(rv[rnd][0][x][y].vars) # S
+#    #        i.branch(rv[rnd][2][x].vars) # C
+#            i.branch(rv[rnd][3][x].vars) # D
+#        for y in range(5):
+#            for x in range(5):
+#                pass
+#    #            i.branch(rv[rnd][0][x][y].vars) # S
 
+def main():
+    r = []
+    for i in range(5):
+        r.append(run_experiment(i))
+
+    print()
+    print('----- REPORT -----')
+    print('Time / Conflicts')
+    print('\t'.join(x['stats']['time'] for x in r))
+    print('\t'.join(str(x['stats']['conflicts']) for x in r))
 
 ########################################################################################################################
 
-assert r%8 == 0
-assert n%8 == 0
-assert len(msgbits) == msglen
+def run_experiment(extra_seed = 0):
+    global r, c, sfx, n, msglen, roundlimit, msgbits, outbits, solver, Keccak
+    assert r%8 == 0
+    assert n%8 == 0
+    assert len(msgbits) == msglen
 
-# Derived configuration
-b = r+c # TODO assert valid
-w = b // 25
-nr = 12 + 2*int(math.log(w, 2))
+    instance = Instance()
 
-if roundlimit == -1:
-    roundlimit = nr
-assert roundlimit <= nr
+    # Derived configuration
+    b = r+c # TODO assert valid
+    w = b // 25
+    nr = 12 + 2*int(math.log(w, 2))
 
-# Initial empty state
-S = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
+    if roundlimit == -1:
+        roundlimit = nr
+    assert roundlimit <= nr
 
-# Input message
-P = [BitVector(w) for _ in range(max(1, math.ceil(msglen / w)))]
-spos = 0
-while spos < msglen:
-    nthbit(P, spos, msgbits[spos])
+    # Initial empty state
+    S = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
+
+    # Input message
+    P = [BitVector(w) for _ in range(max(1, math.ceil(msglen / w)))]
+    spos = 0
+    while spos < msglen:
+        nthbit(P, spos, msgbits[spos])
+        spos += 1
+
+    # Suffix
+    sfxi = sfx
+    while sfxi != 1:
+        # TODO support when suffix needs to go to new vector
+        nthbit(P, spos, sfxi % 2)
+        sfxi //= 2
+        spos += 1
+
+    # Padding
+    # TODO properly handle all cases
+    nthbit(P, spos, True)
     spos += 1
+    while spos < w: # TODO fix
+        nthbit(P, spos, False)
+        spos += 1
+    for _ in range(7):
+        P.append(intToVector(0, 64))
+    P.append(intToVector(9223372036854775808, 64))
 
-# Suffix
-sfxi = sfx
-while sfxi != 1:
-    # TODO support when suffix needs to go to new vector
-    nthbit(P, spos, sfxi % 2)
-    sfxi //= 2
-    spos += 1
+    roundvars = []
 
-# Padding
-# TODO properly handle all cases
-nthbit(P, spos, True)
-spos += 1
-while spos < w: # TODO fix
-    nthbit(P, spos, False)
-    spos += 1
-for _ in range(7):
-    P.append(intToVector(0, 64))
-P.append(intToVector(9223372036854775808, 64))
+    def rounds():
+        #global S, roundvars
+        for i in range(roundlimit):
+            rc = intToVector(Keccak.RC[i], 64) # TODO truncate to w bits
+            B = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
+            C = [intToVector(0, w) for _ in range(5)]
+            D = [intToVector(0, w) for _ in range(5)]
 
-roundvars = []
+            for x in range(5):
+                C[x] = S[x][0] ^ S[x][1] ^ S[x][2] ^ S[x][3] ^ S[x][4]
+            for x in range(5):
+                D[x] = C[(x-1)%5] ^ CyclicLeftShift(C[(x+1)%5], 1)
+            for x in range(5):
+                for y in range(5):
+                    S[x][y] = S[x][y] ^ D[x]
 
-def rounds():
-    global S, roundvars
-    for i in range(roundlimit):
-        rc = intToVector(Keccak.RC[i], 64) # TODO truncate to w bits
-        B = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
-        C = [intToVector(0, w) for _ in range(5)]
-        D = [intToVector(0, w) for _ in range(5)]
+            for x in range(5):
+                for y in range(5):
+                    B[y][(2*x+3*y)%5] = CyclicLeftShift(S[x][y], Keccak.r[x][y])
 
-        for x in range(5):
-            C[x] = S[x][0] ^ S[x][1] ^ S[x][2] ^ S[x][3] ^ S[x][4]
-        for x in range(5):
-            D[x] = C[(x-1)%5] ^ CyclicLeftShift(C[(x+1)%5], 1)
-        for x in range(5):
-            for y in range(5):
-                S[x][y] = S[x][y] ^ D[x]
+            for x in range(5):
+                for y in range(5):
+                    S[x][y] = B[x][y] ^ ((~B[(x+1)%5][y]) & B[(x+2)%5][y])
 
-        for x in range(5):
-            for y in range(5):
-                B[y][(2*x+3*y)%5] = CyclicLeftShift(S[x][y], Keccak.r[x][y])
+            S[0][0] = S[0][0] ^ rc
 
-        for x in range(5):
-            for y in range(5):
-                S[x][y] = B[x][y] ^ ((~B[(x+1)%5][y]) & B[(x+2)%5][y])
+            roundvars.append(([row[:] for row in S], B, C, D))
 
-        S[0][0] = S[0][0] ^ rc
+    # Absorb
+    for i in range(len(P)*64//r):
+        Pi = P[i*r//w:(i+1)*r//w]
+        for y in range(5):
+            for x in range(5):
+                idx = 5*y + x
+                if idx < len(Pi):
+                    S[x][y] = S[x][y] ^ Pi[idx]
+        rounds()
 
-        roundvars.append(([row[:] for row in S], B, C, D))
-
-# Absorb
-for i in range(len(P)*64//r):
-    Pi = P[i*r//w:(i+1)*r//w]
+    # Squeeze
+    # TODO variable length output, bitrate output only, do rounds inbetween
+    out = []
     for y in range(5):
         for x in range(5):
-            idx = 5*y + x
-            if idx < len(Pi):
-                S[x][y] = S[x][y] ^ Pi[idx]
-    rounds()
+            out.append(S[x][y])
 
-# Squeeze
-# TODO variable length output, bitrate output only, do rounds inbetween
-out = []
-for y in range(5):
-    for x in range(5):
-        out.append(S[x][y])
+    # Generate reference digest for output bit fixing
+    import random
+    rnd = random.Random()
+    # TODO one more external seed param, for averaging multiple different instances
+    from zlib import adler32
+    seedstr = str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits) + str(extra_seed)
+    seed = adler32(seedstr.encode()) & 0xffffffff
+    rnd.seed(seed)
+    #print(rnd.randint(0, 255))
+    #import sys
+    #sys.exit()
+    refout_msg = ''.join(('00'+hex(rnd.randint(0, 255))[2:])[-2:] for _ in range(msglen//8))
+    refout_k = Keccak(roundlimit=roundlimit)
+    refout_digest = refout_k.Keccak((msglen, refout_msg), r, c, sfx, n)
 
-# Generate reference digest for output bit fixing
-import random
-rnd = random.Random()
-# TODO one more external seed param, for averaging multiple different instances
-from zlib import adler32
-seedstr = str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits) + str(extra_seed)
-seed = adler32(seedstr.encode()) & 0xffffffff
-rnd.seed(seed)
-#print(rnd.randint(0, 255))
-#import sys
-#sys.exit()
-refout_msg = ''.join(('00'+hex(rnd.randint(0, 255))[2:])[-2:] for _ in range(msglen//8))
-refout_k = Keccak(roundlimit=roundlimit)
-refout_digest = refout_k.Keccak((msglen, refout_msg), r, c, sfx, n)
+    # Fix output bits
+    for i in range(n):
+        if outbits[i] == 'ref':
+            nthbit(out, i, int(refout_digest[(i//8)*2:(i//8)*2 + 2], 16) & (1 << (i % 8)))
+        else:
+            nthbit(out, i, outbits[i])
 
-# Fix output bits
-for i in range(n):
-    if outbits[i] == 'ref':
-        nthbit(out, i, int(refout_digest[(i//8)*2:(i//8)*2 + 2], 16) & (1 << (i % 8)))
-    else:
-        nthbit(out, i, outbits[i])
+    # SOLVE
+    #rel = []
+    #for y in range(5):
+    #    for x in range(5):
+    #        rel.append(S[x][y])
+    #instance.emit(rel)
+    instance.assignVars(out + P)
 
-# SOLVE
-#rel = []
-#for y in range(5):
-#    for x in range(5):
-#        rel.append(S[x][y])
-#instance.emit(rel)
-instance.assignVars(out + P)
+    #print(roundvars)
 
-#print(roundvars)
+    # branching order
+    branchorder(instance, roundvars)
+    instance.emit(out + P)
 
-# branching order
-branchorder(instance, roundvars)
-instance.emit(out + P)
+    print('Starting solver')
+    #from subprocess import call
+    #call(['minisat', 'instance.cnf', 'instance.out'])
+    #instance.read('instance.out')
+    stats = instance.solve(solver)
+    #stats = instance.solve('./cmsrun.sh')
 
-print('Starting solver')
-#from subprocess import call
-#call(['minisat', 'instance.cnf', 'instance.out'])
-#instance.read('instance.out')
-stats = instance.solve(solver)
-#stats = instance.solve('./cmsrun.sh')
+    # Test
+    #print(P[0].getValuation(instance)[:msglen])
+    #print(P[0].getValuation(instance)[msglen:])
+    #print(toInt(P[0].getValuation(instance)[:msglen]))
+    #print(toHexInt(P[0].getValuation(instance)[:msglen]))
+    #for i in range(len(P)):
+    #    print(i, toHexInt(P[i].getValuation(instance)))
+    #    print(i, toHexInt(P[i].getValuation(instance)), toInt(P[i].getValuation(instance)), P[i].getValuation(instance))
 
-# Test
-#print(P[0].getValuation(instance)[:msglen])
-#print(P[0].getValuation(instance)[msglen:])
-#print(toInt(P[0].getValuation(instance)[:msglen]))
-#print(toHexInt(P[0].getValuation(instance)[:msglen]))
-#for i in range(len(P)):
-#    print(i, toHexInt(P[i].getValuation(instance)))
-#    print(i, toHexInt(P[i].getValuation(instance)), toInt(P[i].getValuation(instance)), P[i].getValuation(instance))
+    #for y in range(5):
+    #    for x in range(5):
+    #        print(toHexInt(S[x][y].getValuation(instance)), '\t', end='')
+    #    print()
 
-#for y in range(5):
-#    for x in range(5):
-#        print(toHexInt(S[x][y].getValuation(instance)), '\t', end='')
-#    print()
+    # Output/verify
+    message = []
+    for i in range(msglen):
+        message.append(P[i//w].getValuation(instance)[i%w])
+    print('message:', message)
+    msg = (msglen, bitsToHex(message))
 
-# Output/verify
-message = []
-for i in range(msglen):
-    message.append(P[i//w].getValuation(instance)[i%w])
-print('message:', message)
-msg = (msglen, bitsToHex(message))
+    mb = b''
+    for i in range(msglen//8):
+        #mb += '-' + msg[1][2*i:2*i+2]
+        #mb += '-' + '/'.join([str(x) for x in P[i//w].getValuation(instance)])
+        mb += toInt(P[i*8//w].getValuation(instance)[(i*8)%w:(i*8)%w + 8]).to_bytes(1, byteorder='big')
+    print('message:' , msg, mb)
 
-mb = b''
-for i in range(msglen//8):
-    #mb += '-' + msg[1][2*i:2*i+2]
-    #mb += '-' + '/'.join([str(x) for x in P[i//w].getValuation(instance)])
-    mb += toInt(P[i*8//w].getValuation(instance)[(i*8)%w:(i*8)%w + 8]).to_bytes(1, byteorder='big')
-print('message:' , msg, mb)
+    digest = ''
+    for q in out:
+        dx = ('0'*(w//4) + toHexInt(q.getValuation(instance))[2:])[-w//4:]
+        for i in range(len(dx)//2):
+            digest += dx[-2*(i+1):][:2]
+    digest = digest[:2*n//8]
+    print('digest:   ', digest.upper())
 
-digest = ''
-for q in out:
-    dx = ('0'*(w//4) + toHexInt(q.getValuation(instance))[2:])[-w//4:]
-    for i in range(len(dx)//2):
-        digest += dx[-2*(i+1):][:2]
-digest = digest[:2*n//8]
-print('digest:   ', digest.upper())
+    from sha3_reference import Keccak
+    k = Keccak(roundlimit=roundlimit)
+    ref_digest = k.Keccak(msg, r, c, sfx, n)
+    print('reference:', ref_digest)
 
-from sha3_reference import Keccak
-k = Keccak(roundlimit=roundlimit)
-ref_digest = k.Keccak(msg, r, c, sfx, n)
-print('reference:', ref_digest)
+    assert digest.upper() == ref_digest
+    print('SUCCESS digest match')
 
-assert digest.upper() == ref_digest
-print('SUCCESS digest match')
+    print('REFOUT message:', refout_msg)
+    print('REFOUT digest :', refout_digest)
+    print('SEED was:', seed)
+    print(stats)
+    #assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
+    #assert digest.upper() == 'F30E8484FA863883156C517514C4E2A9096EC6009F40EBFB9F00666EC58E52E50E64F9074C9182A325A21CC99516B155560F8C48BE28F11F2EE73F6945FF7563'
 
-print('REFOUT message:', refout_msg)
-print('REFOUT digest :', refout_digest)
-print('SEED was:', seed)
-print(stats)
-#assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
-#assert digest.upper() == 'F30E8484FA863883156C517514C4E2A9096EC6009F40EBFB9F00666EC58E52E50E64F9074C9182A325A21CC99516B155560F8C48BE28F11F2EE73F6945FF7563'
 
-import inspect
-with open('stats-sha3.dat', 'a') as f:
-    f.write(str({
+    import inspect
+    report = {
         'seed': seed,
         'extra_seed': extra_seed,
+        'message': (msg, mb),
+        'digest': digest.upper(),
         'stats': stats,
         'msglen': msglen,
         'roundlimit': roundlimit,
         'msgbits': msgbits,
         'outbits': outbits,
         'branch:': inspect.getsourcelines(branchorder)
-    }) + '\n')
+    }
+    with open('stats-sha3.dat', 'a') as f:
+        f.write(str(report) + '\n')
+    return report
+
+main()
