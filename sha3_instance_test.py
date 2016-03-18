@@ -157,7 +157,11 @@ for y in range(5):
 # Generate reference digest for output bit fixing
 import random
 rnd = random.Random()
-rnd.seed(str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits)) # TODO one more external seed param, for averaging multiple different instances
+# TODO one more external seed param, for averaging multiple different instances
+from zlib import adler32
+seedstr = str(msglen) + str(roundlimit) +  ''.join(str(x) for x in msgbits) +  ''.join(str(x) for x in outbits) + str(1)
+seed = adler32(seedstr.encode()) & 0xffffffff
+rnd.seed(seed)
 #print(rnd.randint(0, 255))
 #import sys
 #sys.exit()
@@ -183,7 +187,7 @@ instance.assignVars(out + P)
 #print(roundvars)
 
 # branching order
-for rnd in [0]:
+for rnd in []:
     for x in range(5):
         for y in range(5):
             pass
@@ -198,6 +202,7 @@ for rnd in [0]:
 
 instance.emit(out + P)
 
+print('Starting solver')
 #from subprocess import call
 #call(['minisat', 'instance.cnf', 'instance.out'])
 #instance.read('instance.out')
@@ -250,6 +255,6 @@ print('SUCCESS digest match')
 
 print('REFOUT message:', refout_msg)
 print('REFOUT digest :', refout_digest)
-
+print('SEED was:', seed)
 #assert digest.upper() == 'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26'
 #assert digest.upper() == 'F30E8484FA863883156C517514C4E2A9096EC6009F40EBFB9F00666EC58E52E50E64F9074C9182A325A21CC99516B155560F8C48BE28F11F2EE73F6945FF7563'
