@@ -404,12 +404,16 @@ class Instance:
         import sys
         p = Popen([sat_cmd, 'instance.cnf', 'instance.out'], stdout=PIPE)
         #stdout, _ = p.communicate()
-        time = None
+        time,conflicts,vars,clauses = None, None, None, None
         for line in iter(p.stdout.readline, b""):
             line = line.decode()
             sys.stdout.write(line)
             if line.strip().startswith('c Total time'):
                 time = line.split(':')[1].strip()
-                break
+            elif line.strip().startswith('CPU time'):
+                time = line.split(':')[1].strip().split(' ')[0]
+            elif line.strip().startswith('c Conflicts in UIP') or line.strip().startswith('conflicts'):
+                conflicts = int(line.split(':')[1].split('(')[0].strip())
+            # TODO vars/clauses
         self.read('instance.out')
-        return {'time': time}
+        return {'solver': sat_cmd, 'time': time, 'conflicts': conflicts, 'vars': vars, 'clauses': clauses}
