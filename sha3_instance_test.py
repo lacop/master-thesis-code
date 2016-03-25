@@ -69,35 +69,37 @@ solver = ['timeout', '5', './cmsrun.sh']
 #solver = './cmsrun.sh'
 #solver = 'minisat'
 
-def branchorder(i, rv):
-    for rnd in []:
-    # X, Y -> S[x][y]
-    #    for x in range(5):
-    #        for y in range(5):
-    #            i.branch(rv[rnd][0][x][y].vars) # S
-
-    # Y, X -> S[x][y]
-    #    for y in range(5):
-    #        for x in range(5):
-    #            i.branch(rv[rnd][0][x][y].vars) # S
-
-    # X, Y -> B[x][y]
-        for x in range(5):
-            for y in range(5):
-                i.branch(rv[rnd][1][x][y].vars) # B
-
-    # X -> D[x]
-    #    for x in range(5):
-    #        i.branch(rv[rnd][2][x].vars) # C
-
-    # X -> D[x]
-    #    for x in range(5):
-    #        i.branch(rv[rnd][3][x].vars) # D
+# def branchorder(i, rv):
+#     for rnd in []:
+#     # X, Y -> S[x][y]
+#     #    for x in range(5):
+#     #        for y in range(5):
+#     #            i.branch(rv[rnd][0][x][y].vars) # S
+#
+#     # Y, X -> S[x][y]
+#     #    for y in range(5):
+#     #        for x in range(5):
+#     #            i.branch(rv[rnd][0][x][y].vars) # S
+#
+#     # X, Y -> B[x][y]
+#         for x in range(5):
+#             for y in range(5):
+#                 i.branch(rv[rnd][1][x][y].vars) # B
+#
+#     # X -> D[x]
+#     #    for x in range(5):
+#     #        i.branch(rv[rnd][2][x].vars) # C
+#
+#     # X -> D[x]
+#     #    for x in range(5):
+#     #        i.branch(rv[rnd][3][x].vars) # D
 
 def main():
+    def bo(i, rv):
+        pass
     r = []
     for i in range(1):
-        r.append(run_experiment(i))
+        r.append(run_experiment(i, bo))
 
     print()
     print('----- REPORT -----')
@@ -108,7 +110,7 @@ def main():
 
 ########################################################################################################################
 
-def run_experiment(extra_seed = 0):
+def run_experiment(extra_seed = 0, branch_order=None):
     global r, c, sfx, n, msglen, roundlimit, msgbits, outbits, solver, Keccak
     assert r%8 == 0
     assert n%8 == 0
@@ -224,7 +226,8 @@ def run_experiment(extra_seed = 0):
 
     instance.assignVars(out + P)
     # Branching order
-    branchorder(instance, roundvars)
+    if branch_order is not None:
+        branch_order(instance, roundvars)
     instance.emit(out + P)
 
     print('Starting solver')
@@ -276,7 +279,7 @@ def run_experiment(extra_seed = 0):
         'roundlimit': roundlimit,
         'msgbits': msgbits,
         'outbits': outbits,
-        'branch:': inspect.getsourcelines(branchorder)
+        'branch:': inspect.getsourcelines(branch_order)
     }
     with open('stats-sha3.dat', 'a') as f:
         f.write(str(report) + '\n')
