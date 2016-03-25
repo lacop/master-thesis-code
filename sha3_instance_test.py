@@ -279,7 +279,7 @@ def run_experiment(extra_seed = 0, branch_order=None):
         'roundlimit': roundlimit,
         'msgbits': msgbits,
         'outbits': outbits,
-        'branch:': inspect.getsourcelines(branch_order)
+        'branch:': inspect.getsourcelines(branch_order) if branch_order is not None else 'none'
     }
     with open('stats-sha3.dat', 'a') as f:
         f.write(str(report) + '\n')
