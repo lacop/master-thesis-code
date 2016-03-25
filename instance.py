@@ -399,40 +399,24 @@ class Instance:
         for var in vars:
             self.branches.append(var)  # TODO support groups
 
-    def solve(self, sat_cmd, timeout=None):
-        from subprocess import Popen, PIPE, TimeoutExpired
-        import time
+    def solve(self, sat_cmd):
+        from subprocess import Popen, PIPE
         import sys
-        p = Popen([sat_cmd, 'instance.cnf', 'instance.out'], stdout=PIPE)
+        p = Popen(sat_cmd + ['instance.cnf', 'instance.out'], stdout=PIPE)
         #stdout, _ = p.communicate()
-        t,conflicts,vars,clauses = None, None, None, None
-        finished = False
-        start = time.time()
-        out = None
-        while p.returncode is None:
-            try :
-                #print('trying comm')
-                out, _ = p.communicate(timeout=10)
-                finished = True
-                #print('finished')
-            except TimeoutExpired:
-                #print('timed out')
-                pass
-            if out:
-                for line in out.decode().split('\n'):
-                    print(line)
-                    if line.strip().startswith('c Total time'):
-                        t = line.split(':')[1].strip()
-                    elif line.strip().startswith('CPU time'):
-                        t = line.split(':')[1].strip().split(' ')[0]
-                    elif line.strip().startswith('c Conflicts in UIP') or line.strip().startswith('conflicts'):
-                        conflicts = int(line.split(':')[1].split('(')[0].strip())
+        t,conflicts,vars,clauses,sat = None, None, None, None, False
+        for line in iter(p.stdout.readline, b""):
+            line = line.decode()
+            sys.stdout.write(line)
+            if line.strip().startswith('c Total time'):
+                t = line.split(':')[1].strip()
+            elif line.strip().startswith('CPU time'):
+                t = line.split(':')[1].strip().split(' ')[0]
+            elif line.strip().startswith('c Conflicts in UIP') or line.strip().startswith('conflicts'):
+                conflicts = int(line.split(':')[1].split('(')[0].strip())
+            elif line.strip().startswith('SATISFIABLE') or line.strip().startswith('s SATISFIABLE'):
+                sat = True
 
-            if timeout is not None and timeout < (time.time() - start):
-                print('TIMED OUT')
-                return None
-            p.poll()
-
-            # TODO vars/clauses
+        # TODO vars/clauses
         self.read('instance.out')
-        return {'solver': sat_cmd, 'time': t, 'conflicts': conflicts, 'vars': vars, 'clauses': clauses}
+        return {'solver': sat_cmd, 'time': t, 'conflicts': conflicts, 'vars': vars, 'clauses': clauses, 'satisfiable': sat}
