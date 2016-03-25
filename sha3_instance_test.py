@@ -282,4 +282,5 @@ def run_experiment(extra_seed = 0):
         f.write(str(report) + '\n')
     return report
 
-main()
+if __name__ == '__main__':
+    main()
