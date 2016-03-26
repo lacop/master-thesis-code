@@ -53,8 +53,8 @@ def experiment_1():
     # SHA3, message length = 32, preimage = 8bit reference
     # Different number of rounds
     # Test with different branch orders
-    # Multiple runs each (10)
-    # Timeout = 30s
+    # Multiple runs each (10x10=100 total)
+    # Timeout = 60s
 
     branch_orders = {
         'none': None,
@@ -64,13 +64,20 @@ def experiment_1():
         'rlast-S-y-x': genbo([lambda rv: rv[-1][0][x][y] for y in range(5) for x in range(5)]),
     }
 
-    for rounds in range(1, 16):
-        for bodesc, bo in branch_orders.items():
-            print('Rounds=', rounds, 'BO=', bodesc)
-            multiple_runs(
-                'experiments/ex1-sha3-minisat-bos.csv',
-                32, rounds, 8,
-                ['timeout', '30', './minisatrun.sh'],
-                bo, bodesc,
-                10)
+    for _ in range(10):
+        for rounds in range(1, 25):
+            for bodesc, bo in branch_orders.items():
+                print('Rounds=', rounds, 'BO=', bodesc)
+                multiple_runs(
+                    'experiments/ex1-sha3-minisat-bos.csv',
+                    32, rounds, 8,
+                    ['timeout', '60', './minisatrun.sh'],
+                    bo, bodesc,
+                    10)
 experiment_1()
+
+#multiple_runs('experiments/tmp.csv',
+#              32, 24, 8,
+#              ['timeout', '30', './minisatrun.sh'],
+#              genbo([lambda rv: rv[0][0][x][y] for x in range(5) for y in range(5)]), 'r0-S-x-y',
+#              1)
