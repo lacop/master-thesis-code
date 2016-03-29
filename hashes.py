@@ -2,6 +2,7 @@ from instance import *
 import md5_test
 import sha1_test
 import random
+from optimizers import OptimizeExpression
 
 def intToVector(x, size=32):
     bits = [False]*size
@@ -98,9 +99,19 @@ def SHA1_run(message, rounds):
 
     h0, h1, h2, h3, h4 = [intToVector(x) for x in [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]]
 
+    r1 = OptimizeExpression(lambda b, c, d: (b & c) ^ (~b & d))
+    r24 = lambda b, c, d: b^c^d
+    r3 = OptimizeExpression(lambda b, c, d: (b & c) ^ (b & d) ^ (c & d))
+    opt_fs = [lambda a, b, c, d, e: r1(b, c, d),
+              lambda a, b, c, d, e: r24(b, c, d),
+              lambda a, b, c, d, e: r3(b, c, d),
+              lambda a, b, c, d, e: r24(b, c, d)]
+    print('USING OPTIMIZED ROUND FUNCTIONS')
+
     A, B, C, D, E = h0, h1, h2, h3, h4
     for i in range(rounds):
-        F = sha1_test.fs[i//20](A, B, C, D, E)
+        #F = sha1_test.fs[i//20](A, B, C, D, E)
+        F = opt_fs[i//20](A, B, C, D, E)
         k = Kvec[i//20]
         F.annotation = 'Round #'+str(i)+' round function F'
 
