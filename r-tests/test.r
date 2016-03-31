@@ -1,8 +1,10 @@
 library(data.table)
 library(boot)
 
-replicates = 1000 # TODO research proper values
+replicates = 1000 # TODO
+#filename = 'sha1-32bit-out12bitREF.csv'
 filename = 'sha1-32bit-out8bitREF.csv'
+
 
 #raw_data = read.csv('sha1-16bit-nores.csv')
 raw_data = read.csv(filename)
@@ -40,7 +42,7 @@ for(r in groupped$rounds) {
 }
 
 plot(x = 1,
-     log = "y",
+     #log = "y",
      xlim = range(groupped$rounds),
      ylim = range(groupped$ci_low, groupped$ci_high),
      xlab = "Number of rounds",
