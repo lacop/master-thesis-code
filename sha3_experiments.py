@@ -109,7 +109,7 @@ def experiment_2():
                     ['timeout', '60', './minisatrun.sh'],
                     bo, bodesc,
                     5)
-experiment_2()
+#experiment_2()
 
 # multiple_runs('experiments/tmp.csv',
 #               32, 24, 4,
@@ -118,3 +118,29 @@ experiment_2()
 #               genbo([lambda rv: rv[1][0][x][y] for x in range(5) for y in range(5)]), 'r1-S-x-y',
 #               #None, 'none',
 #               1)
+
+###################################################################################################
+
+def experiment_rounds_opts(msglen, outrefcnt, runsperround, solver, prefix):
+    sha3.msglen = msglen
+    sha3.outbits[:outrefcnt] = ['ref']*outrefcnt
+    sha3.solver = solver
+
+    for i in range(runsperround):
+        for rounds in range(25):
+            sha3.roundlimit = rounds
+            print('Run', i+1, 'out of', runsperround, ' rounds=', rounds)
+            for use_espresso in [False, True]:
+                for xor_merge in [False, True]:
+                    report = sha3.run_experiment(i, use_espresso=use_espresso, xor_merge=xor_merge)
+                    if report is None:
+                        print('WARNING: unsatisfiable or timed out')
+                        continue
+                    print(report)
+                    csvfile = prefix + '{}bit-out{}bitREF-{}-{}.csv'.format(msglen, outrefcnt,
+                                                                            'xor' if xor_merge else 'noxor',
+                                                                            'espresso' if use_espresso else 'noopt')
+                    with open(csvfile, 'a') as f:
+                        f.write(','.join([str(rounds), report['stats']['time']]) + '\n')
+# 4 experiments, 24 rounds, x repeats
+experiment_rounds_opts(32, 8, 100, ['./minisatrun.sh'], 'r-tests/sha3-')

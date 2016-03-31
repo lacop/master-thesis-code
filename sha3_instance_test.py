@@ -1,5 +1,6 @@
 from instance import *
 from sha3_reference import Keccak
+from optimizers import OptimizeExpression
 import math
 
 # Little-endian
@@ -110,7 +111,7 @@ def main():
 
 ########################################################################################################################
 
-def run_experiment(extra_seed = 0, branch_order=None):
+def run_experiment(extra_seed = 0, branch_order=None, use_espresso=False, xor_merge=True):
     global r, c, sfx, n, msglen, roundlimit, msgbits, outbits, solver, Keccak
     assert r%8 == 0
     assert n%8 == 0
@@ -158,6 +159,13 @@ def run_experiment(extra_seed = 0, branch_order=None):
 
     roundvars = []
 
+    Cfnc = lambda x,y,z,v,w: x ^ y ^ z ^ v ^ w
+    if xor_merge:
+        Cfnc = OptimizeExpression(Cfnc)
+    Sfnc = lambda x,y,z: x ^ (~y & z)
+    if use_espresso:
+        Sfnc = OptimizeExpression(Sfnc)
+
     def rounds():
         #global S, roundvars
         for i in range(roundlimit):
@@ -167,7 +175,8 @@ def run_experiment(extra_seed = 0, branch_order=None):
             D = [intToVector(0, w) for _ in range(5)]
 
             for x in range(5):
-                C[x] = S[x][0] ^ S[x][1] ^ S[x][2] ^ S[x][3] ^ S[x][4]
+                #C[x] = S[x][0] ^ S[x][1] ^ S[x][2] ^ S[x][3] ^ S[x][4]
+                C[x] = Cfnc(S[x][0], S[x][1], S[x][2], S[x][3], S[x][4])
             for x in range(5):
                 D[x] = C[(x-1)%5] ^ CyclicLeftShift(C[(x+1)%5], 1)
             for x in range(5):
@@ -180,7 +189,7 @@ def run_experiment(extra_seed = 0, branch_order=None):
 
             for x in range(5):
                 for y in range(5):
-                    S[x][y] = B[x][y] ^ ((~B[(x+1)%5][y]) & B[(x+2)%5][y])
+                    S[x][y] = Sfnc(B[x][y], B[(x+1)%5][y], B[(x+2)%5][y])
 
             S[0][0] = S[0][0] ^ rc
 
