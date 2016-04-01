@@ -21,10 +21,13 @@ def toInt(bits):
 def toIntBE(bits):
     return toInt(bits[::-1])
 
-r1 = OptimizeExpression(lambda b, c, d: (b & c) ^ (~b & d))
+r1 = lambda b, c, d: (b & c) ^ (~b & d)
 r24 = lambda b, c, d: b^c^d
-r3 = OptimizeExpression(lambda b, c, d: (b & c) ^ (b & d) ^ (c & d))
-#r3 = lambda b, c, d: (b & c) ^ (b & d) ^ (c & d)
+r3 = lambda b, c, d: (b & c) ^ (b & d) ^ (c & d)
+
+#r1 = OptimizeExpression(r1)
+#r3 = OptimizeExpression(r3)
+
 fs = [lambda a, b, c, d, e: r1(b, c, d),
       lambda a, b, c, d, e: r24(b, c, d),
       lambda a, b, c, d, e: r3(b, c, d),
@@ -80,7 +83,7 @@ def main(mlength = None, rounds = None, out_file = None):
     # Fix message/output bits here
 
     #Mvec[0].bits = [True]*32
-    #h4.bits = [False]*8 + [None]*24
+    h4.bits = [False]*8 + [None]*24
 
     #######################################################
 
@@ -101,7 +104,7 @@ def main(mlength = None, rounds = None, out_file = None):
 
     instance.emit([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
     #stats = instance.solve('./cmsrunq.sh')
-    stats = instance.solve('minisat')
+    stats = instance.solve(['./minisatrun.sh'])
     #from subprocess import call
     #call(['minisat', 'instance.cnf', 'instance.out'])
     #call(['./cmsrun.sh', 'instance.cnf', 'instance.out'])
