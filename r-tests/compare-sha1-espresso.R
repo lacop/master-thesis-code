@@ -46,31 +46,34 @@ get_groupped <- function(raw_data) {
 groupped_1 = get_groupped(raw_data1)
 groupped_2 = get_groupped(raw_data2)
 
+pdf("sha1-32bit-8bitref-cmp-espresso.pdf", width = 6.5, height = 2.5)
+par(mai=c(0.6,0.6,0.1,0.1), mgp=c(2,1,0))
 plot(x = 1,
-     #log = "y",
+     log = "y",
      xlim = range(groupped_1$rounds),
      ylim = range(groupped_1$ci_low, groupped_1$ci_high, groupped_2$ci_low, groupped_2$ci_high),
      xlab = "Number of rounds",
      ylab = "Time [seconds]",
-     main = paste("Solving time vs. #rounds", sep=""),
+     #main = paste("Solving time vs. #rounds", sep=""),
      type = "n",
      xaxt = "n")
 axis(side = 1,
      at = groupped_1$rounds)
-
-polygon(x = c(groupped_1$rounds, rev(groupped_1$rounds)),
-        y = c(groupped_1$ci_low, rev(groupped_1$ci_high)),
-        col = "grey",
-       border = NA)
+#polygon(x = c(groupped_1$rounds, rev(groupped_1$rounds)),
+#        y = c(groupped_1$ci_low, rev(groupped_1$ci_high)),
+#        col = "grey",
+#       border = NA)
 lines(groupped_1$rounds, groupped_1$ci_low, type="l", lty=2)
 lines(groupped_1$rounds, groupped_1$ci_high, type="l", lty=2)
 
-polygon(x = c(groupped_2$rounds, rev(groupped_2$rounds)),
-        y = c(groupped_2$ci_low, rev(groupped_2$ci_high)),
-        col = rgb(1, 0.5, 0.5, 0.5),
-        border = NA)
+#polygon(x = c(groupped_2$rounds, rev(groupped_2$rounds)),
+#        y = c(groupped_2$ci_low, rev(groupped_2$ci_high)),
+#        col = rgb(1, 0.5, 0.5, 0.5),
+#        border = NA)
 lines(groupped_2$rounds, groupped_2$ci_low, type="l", lty=2, col="red")
 lines(groupped_2$rounds, groupped_2$ci_high, type="l", lty=2, col="red")
 
 lines(groupped_1$rounds, groupped_1$mean, type="o", pch=20, bg="black")
 lines(groupped_2$rounds, groupped_2$mean, type="o", pch=20, bg="black", col="red")
+
+dev.off()

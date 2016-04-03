@@ -145,3 +145,12 @@ def experiment_rounds_opts(msglen, outrefcnt, runsperround, solver, prefix, offs
 # 4 experiments, 24 rounds, x repeats
 #experiment_rounds_opts(32, 8, 100, ['./minisatrun.sh'], 'r-tests/sha3-')
 experiment_rounds_opts(32, 8, 100, ['./minisatrun.sh'], 'r-tests/sha3-', 50)
+
+def debug():
+    sha3.msglen=32
+    sha3.solver = ['./minisatrun.sh']
+    sha3.outbits[:8] = ['ref']*8
+    sha3.roundlimit = 24
+    sha3.run_experiment(0, use_espresso=False, xor_merge=True)
+    
+debug()
