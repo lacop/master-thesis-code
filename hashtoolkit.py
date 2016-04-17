@@ -34,14 +34,14 @@ hash_functions = {
 }
 
 @click.command()
-@click.option('--hash_name', '-h', default='sha1')
-@click.option('--message_len', '-l', default=8*8)
-@click.option('--rounds', '-r', default=-1)
-@click.option('--input-fix', '-i', default='')
-@click.option('--output-fix', '-o', default='')
-@click.option('--sat_cmd', '-c', default='minisat')
-@click.option('--seed', '-s', default=-1)
-@click.option('--out-file', '-f', default='')
+@click.option('--hash_name', '-h', default='sha1', help='Hash function to use, supported: ' + ', '.join(hash_functions.keys()))
+@click.option('--message_len', '-l', default=8*8, help='Input message length in bits')
+@click.option('--rounds', '-r', default=-1, help='Number of rounds, -1 for full')
+@click.option('--input-fix', '-i', default='', help='Fix input bits, as 0/1 string')
+@click.option('--output-fix', '-o', default='', help='Fix output bits, as 0/1/r string, where r is reference')
+@click.option('--sat_cmd', '-c', default='minisat', help='Solver command to use')
+@click.option('--seed', '-s', default=-1, help='Seed for random reference message')
+@click.option('--out-file', '-f', default='', help='File for statistics output')
 def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file):
     run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file, out_file == '')
 
