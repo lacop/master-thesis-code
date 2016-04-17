@@ -3,6 +3,7 @@ from hashes import *
 import click
 from subprocess import Popen, PIPE, call
 import optimizers
+import random
 
 hash_functions = {
     'sha1': {
@@ -24,6 +25,7 @@ hash_functions = {
             MD5_create_message,
             MD5_run,
             MD5_print_and_verify,
+            MD5_random_ref,
         ],
         'msgindex': (lambda i: (i//32, i%32)),
         'outindex': (lambda i: (i//32, i%32)),
@@ -37,12 +39,13 @@ hash_functions = {
 @click.option('--rounds', '-r', default=-1)
 @click.option('--input-fix', '-i', default='')
 @click.option('--output-fix', '-o', default='')
-@click.option('--sat_cmd', '-s', default='minisat')
+@click.option('--sat_cmd', '-c', default='minisat')
+@click.option('--seed', '-s', default=-1)
 @click.option('--out-file', '-f', default='')
-def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file):
-    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file, out_file == '')
+def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file):
+    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file, out_file == '')
 
-def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file, use_call=False):
+def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file, use_call=False):
     if hash_name not in hash_functions:
         print('Unsupported hash function')
         return
@@ -60,7 +63,10 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file
     for i in range(len(out)):
         out[i].annotation = 'Output word #' + str(i)
 
-    # TODO fixable seed for reference message?
+    if seed == -1:
+        seed = random.randint(1, 2**32)
+    random.seed(seed)
+
     refmsg, refdigest, refbits = hash['functions'][3](message_len, rounds)
     for i in range(min(message_len, len(input_fix))):
         if input_fix[i] != '?':
@@ -86,7 +92,8 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, out_file
     instance.read('instance.out')
 
     print('Reference message:', refmsg, ' '*max(0, 22-len(str(refmsg))), 'Reference digest:', refdigest)
-
+    print('Seed for repeatability:', seed)
+    
     hash['functions'][2](instance, msg, out, message_len, rounds)
     instance.write_annotations('annotations.dat')
 

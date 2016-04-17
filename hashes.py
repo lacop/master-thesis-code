@@ -73,6 +73,20 @@ def MD5_print_and_verify(instance, Mvec, digest, mlength, rounds):
     assert reference == toInt(Dbits)
     print('MATCH!')
 
+def MD5_random_ref(mlength, rounds):
+    assert mlength % 8 == 0
+
+    msg = bytes([random.randint(0, 255) for _ in range(mlength//8)])
+    ref = md5_test.md5(msg, rounds=rounds)
+    digest = md5_test.digest_to_hex(ref)
+
+    bits = []
+    while ref > 0 or len(bits) < 128:
+        bits.append(ref % 2 == 1)
+        ref //= 2
+    return msg,digest,bits
+
+
 # TODO generalize, annotate all hash functions
 
 def SHA1_create_message(mlength):
@@ -94,7 +108,7 @@ def SHA1_create_message(mlength):
 
     return Mvec
 
-def SHA1_run(message, rounds):
+def SHA1_run(message, rounds, optimized=False):
     Kvec = [intToVector(x) for x in sha1_test.K]
 
     h0, h1, h2, h3, h4 = [intToVector(x) for x in [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]]
@@ -106,12 +120,12 @@ def SHA1_run(message, rounds):
               lambda a, b, c, d, e: r24(b, c, d),
               lambda a, b, c, d, e: r3(b, c, d),
               lambda a, b, c, d, e: r24(b, c, d)]
-    print('USING OPTIMIZED ROUND FUNCTIONS')
-
     A, B, C, D, E = h0, h1, h2, h3, h4
     for i in range(rounds):
-        #F = sha1_test.fs[i//20](A, B, C, D, E)
-        F = opt_fs[i//20](A, B, C, D, E)
+        if optimized:
+            F = opt_fs[i//20](A, B, C, D, E)
+        else:
+            F = sha1_test.fs[i//20](A, B, C, D, E)
         k = Kvec[i//20]
         F.annotation = 'Round #'+str(i)+' round function F'
 
