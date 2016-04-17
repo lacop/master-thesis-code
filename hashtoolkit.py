@@ -41,11 +41,12 @@ hash_functions = {
 @click.option('--output-fix', '-o', default='', help='Fix output bits, as 0/1/r string, where r is reference')
 @click.option('--sat_cmd', '-c', default='minisat', help='Solver command to use')
 @click.option('--seed', '-s', default=-1, help='Seed for random reference message')
+@click.option('--collision', is_flag=True, default=False, help='Find collision instead of preimage, use -o with 0/1 to set which output bits should match')
 @click.option('--out-file', '-f', default='', help='File for statistics output')
-def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file):
-    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file, out_file == '')
+def main(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, collision, out_file):
+    run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, collision, out_file, out_file == '')
 
-def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, out_file, use_call=False):
+def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, collision, out_file, use_call=False):
     if hash_name not in hash_functions:
         print('Unsupported hash function')
         return
@@ -57,32 +58,66 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, ou
     instance = Instance()
     msg = hash['functions'][0](message_len)
     out = hash['functions'][1](msg, rounds)
+    if collision:
+        msg2 = hash['functions'][0](message_len)
+        out2 = hash['functions'][1](msg2, rounds)
+        # Make sure messages are not equal
+        inor = ConstantVector([0]*32)
+        for i in range(len(msg)):
+            inor = inor | (msg[i] ^ msg2[i])
+        allrots = ConstantVector([0]*32)
+        for i in range(32):
+            allrots = allrots | CyclicLeftShift(inor, i)
+        allrots.bits[0] = True
+
 
     for i in range(len(msg)):
         msg[i].annotation = 'Message word #' + str(i)
     for i in range(len(out)):
         out[i].annotation = 'Output word #' + str(i)
 
+    # Generate reference message
     if seed == -1:
         seed = random.randint(1, 2**32)
     random.seed(seed)
-
     refmsg, refdigest, refbits = hash['functions'][3](message_len, rounds)
+
+    # Fix input bits
     for i in range(min(message_len, len(input_fix))):
         if input_fix[i] != '?':
             x, y = hash['msgindex'](i)
             msg[x].bits[y] = input_fix[i] == '1'
-    for i in range(min(hash['output_len'], len(output_fix))):
-        if output_fix[i] != '?':
-            x, y = hash['outindex'](i)
-            if output_fix[i] in ['0', '1']:
-                out[x].bits[y] = output_fix[i] == '1'
-            else:
-                out[x].bits[y] = refbits[i]
+            if collision:
+                msg2[x].bits[y] = input_fix[i] == '1'
+
+    # Fix output bits if in preimage mode
+    if not collision:
+        for i in range(min(hash['output_len'], len(output_fix))):
+            if output_fix[i] != '?':
+                x, y = hash['outindex'](i)
+                if output_fix[i] in ['0', '1']:
+                    out[x].bits[y] = output_fix[i] == '1'
+                else:
+                    out[x].bits[y] = refbits[i]
+    # Fix output xor bits if in collision mode
+    else:
+        outxor = []
+        for i in range(len(out)):
+            outxor.append(out[i] ^ out2[i])
+        for i in range(min(hash['output_len'], len(output_fix))):
+            if output_fix[i] != '?':
+                x, y = hash['outindex'](i)
+                outxor[x].bits[y] = output_fix[i] == '0'
+
 
     # TODO merge xor clauses / other optimizations
 
-    instance.emit(msg + out)
+    # Output and solve
+    if collision:
+        instance.emit(msg + out + outxor + [allrots])
+    else:
+        instance.emit(msg + out)
+
     if use_call:
         call([sat_cmd, 'instance.cnf', 'instance.out'])
         stdout = None
@@ -91,12 +126,17 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, ou
         stdout, _ = p.communicate()
     instance.read('instance.out')
 
+    # Verify and output
+
     print('Reference message:', refmsg, ' '*max(0, 22-len(str(refmsg))), 'Reference digest:', refdigest)
     print('Seed for repeatability:', seed)
     
     hash['functions'][2](instance, msg, out, message_len, rounds)
-    instance.write_annotations('annotations.dat')
+    if collision:
+        hash['functions'][2](instance, msg2, out2, message_len, rounds)
 
+
+    instance.write_annotations('annotations.dat')
     if stdout and out_file:
         time = None
         for line in stdout.decode().split('\n'):
