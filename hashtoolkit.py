@@ -6,7 +6,7 @@ import optimizers
 import random
 
 hash_functions = {
-    'sha1': {
+    'sha-1': {
         'rounds': 80,
         'output_len': 160,
         'functions': [
@@ -17,6 +17,18 @@ hash_functions = {
         ],
         'msgindex': (lambda i: (i//32, 31 - i%32)),
         'outindex': (lambda i: (i//32, 31 - i%32)),
+    },
+    'sha-3-512': {
+        'rounds': 24,
+        'output_len': 512,
+        'functions': [
+            SHA3_create_message,
+            SHA3_run,
+            SHA3_print_and_verify,
+            SHA3_random_ref,
+        ],
+        'msgindex': (lambda i: (i//64, i%64)),
+        'outindex': (lambda i: (i//64, i%64)),
     },
     'md5': {
         'rounds': 64,
