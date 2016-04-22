@@ -1,7 +1,8 @@
 from instance import *
 import md5_test
 import sha1_test
-import random
+import sha3_reference
+import random, math
 from optimizers import OptimizeExpression
 
 def intToVector(x, size=32):
@@ -20,6 +21,8 @@ def toInt(bits):
     for b in bits[::-1]:
         val = val*2 + (1 if b else 0)
     return val
+
+########################
 
 def MD5_create_message(mlength):
     Mvec = [BitVector(32) for _ in range(14)]
@@ -87,7 +90,7 @@ def MD5_random_ref(mlength, rounds):
     return msg,digest,bits
 
 
-# TODO generalize, annotate all hash functions
+########################
 
 def SHA1_create_message(mlength):
     # For now just single block/chunk of 64bytes,
@@ -178,3 +181,145 @@ def SHA1_random_ref(mlength, rounds):
         bits.append(ref % 2 == 1)
         ref //= 2
     return msg,digest,bits[::-1]
+
+########################
+
+# Return/set n-th bit of a list of words
+def nthbit(L, n, value=None):
+    i = n // len(L[0].bits)
+    j = n % len(L[0].bits)
+    if value is not None:
+        L[i].bits[j] = value
+        #print(value, i, j)
+    else:
+        return L[i].bits[j]
+
+def SHA3_create_message(msglen):
+    r, c, sfx, n, b, w, nr = 576, 1024, 0x06, 512, 1600, 64, 24 # SHA-3-512
+
+    msgbits = [None]*msglen
+    P = [BitVector(w) for _ in range(max(1, math.ceil(msglen / w)))]
+    spos = 0
+    while spos < msglen:
+        nthbit(P, spos, msgbits[spos])
+        spos += 1
+    # Suffix
+    sfxi = sfx
+    while sfxi != 1:
+        nthbit(P, spos, sfxi % 2)
+        sfxi //= 2
+        spos += 1
+    # Padding
+    nthbit(P, spos, True)
+    spos += 1
+    while spos < w:
+        nthbit(P, spos, False)
+        spos += 1
+    for _ in range(7):
+        P.append(intToVector(0, 64))
+    P.append(intToVector(9223372036854775808, 64))
+
+    return P
+
+def SHA3_run(P, roundlimit):
+    r, c, sfx, n, b, w, nr = 576, 1024, 0x06, 512, 1600, 64, 24 # SHA-3-512
+    # Initial empty state
+    S = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
+
+    def rounds():
+        #global S, roundvars
+        for i in range(roundlimit):
+            rc = intToVector(sha3_reference.Keccak.RC[i], 64) # TODO truncate to w bits
+            B = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
+            C = [intToVector(0, w) for _ in range(5)]
+            D = [intToVector(0, w) for _ in range(5)]
+
+            for x in range(5):
+                C[x] = S[x][0] ^ S[x][1] ^ S[x][2] ^ S[x][3] ^ S[x][4]
+            for x in range(5):
+                D[x] = C[(x-1)%5] ^ CyclicLeftShift(C[(x+1)%5], 1)
+            for x in range(5):
+                for y in range(5):
+                    S[x][y] = S[x][y] ^ D[x]
+
+            for x in range(5):
+                for y in range(5):
+                    B[y][(2*x+3*y)%5] = CyclicLeftShift(S[x][y], sha3_reference.Keccak.r[x][y])
+
+            for x in range(5):
+                for y in range(5):
+                    S[x][y] = B[x][y] ^ (~B[(x+1)%5][y] & B[(x+2)%5][y])
+
+            S[0][0] = S[0][0] ^ rc
+
+    # Absorb
+    for i in range(len(P)*64//r):
+        Pi = P[i*r//w:(i+1)*r//w]
+        for y in range(5):
+            for x in range(5):
+                idx = 5*y + x
+                if idx < len(Pi):
+                    S[x][y] = S[x][y] ^ Pi[idx]
+        rounds()
+
+    # Squeeze
+    out = []
+    for y in range(5):
+        for x in range(5):
+            out.append(S[x][y])
+
+    return out
+
+def toHexInt(bits):
+    return hex(toInt(bits))
+def bitsToHex(bits):
+    hex = ''
+    for i in range(0, len(bits), 8):
+        hex += ('00' + toHexInt(bits[i:i+8])[2:])[-2:]
+    return hex
+
+def SHA3_print_and_verify(instance, P, out, msglen, roundlimit):
+    r, c, sfx, n, b, w, nr = 576, 1024, 0x06, 512, 1600, 64, 24 # SHA-3-512
+
+    message = []
+    for i in range(msglen):
+        message.append(P[i//w].getValuation(instance)[i%w])
+    print('message:', message)
+    msg = (msglen, bitsToHex(message))
+
+    mb = b''
+    for i in range(msglen//8):
+        mb += toInt(P[i*8//w].getValuation(instance)[(i*8)%w:(i*8)%w + 8]).to_bytes(1, byteorder='big')
+    print('message:' , msg, mb)
+
+    digest = ''
+    for q in out:
+        dx = ('0'*(w//4) + toHexInt(q.getValuation(instance))[2:])[-w//4:]
+        for i in range(len(dx)//2):
+            digest += dx[-2*(i+1):][:2]
+    digest = digest[:2*n//8]
+    print('digest:   ', digest.upper())
+
+    from sha3_reference import Keccak
+    k = Keccak(roundlimit=roundlimit)
+    ref_digest = k.Keccak(msg, r, c, sfx, n)
+    print('reference:', ref_digest)
+
+    assert digest.upper() == ref_digest
+    print('SUCCESS digest match')
+
+def SHA3_random_ref(mlength, rounds):
+    r, c, sfx, n, b, w, nr = 576, 1024, 0x06, 512, 1600, 64, 24 # SHA-3-512
+    assert mlength % 8 == 0
+
+    k = sha3_reference.Keccak(roundlimit=rounds)
+    msg = bytes([random.randint(0, 255) for _ in range(mlength//8)])
+    msg_bits = []
+    for i in range(mlength):
+        msg_bits.append(msg[i//8] & (1 << (i%8)))
+    digest = k.Keccak((mlength, bitsToHex(msg_bits)), r, c, sfx, n)
+
+    bits = [False]*n
+    for i in range(n):
+        bits[i] = int(digest[(i//8)*2:(i//8)*2 + 2], 16) & (1 << (i % 8))
+    return msg,digest,bits

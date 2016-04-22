@@ -121,7 +121,7 @@ def experiment_2():
 
 ###################################################################################################
 
-def experiment_rounds_opts(msglen, outrefcnt, runsperround, solver, prefix):
+def experiment_rounds_opts(msglen, outrefcnt, runsperround, solver, prefix, offset=0):
     sha3.msglen = msglen
     sha3.outbits[:outrefcnt] = ['ref']*outrefcnt
     sha3.solver = solver
@@ -132,7 +132,7 @@ def experiment_rounds_opts(msglen, outrefcnt, runsperround, solver, prefix):
             print('Run', i+1, 'out of', runsperround, ' rounds=', rounds)
             for use_espresso in [False, True]:
                 for xor_merge in [False, True]:
-                    report = sha3.run_experiment(i, use_espresso=use_espresso, xor_merge=xor_merge)
+                    report = sha3.run_experiment(i+offset, use_espresso=use_espresso, xor_merge=xor_merge)
                     if report is None:
                         print('WARNING: unsatisfiable or timed out')
                         continue
@@ -144,6 +144,7 @@ def experiment_rounds_opts(msglen, outrefcnt, runsperround, solver, prefix):
                         f.write(','.join([str(rounds), report['stats']['time']]) + '\n')
 # 4 experiments, 24 rounds, x repeats
 #experiment_rounds_opts(32, 8, 100, ['./minisatrun.sh'], 'r-tests/sha3-')
+experiment_rounds_opts(32, 8, 100, ['./minisatrun.sh'], 'r-tests/sha3-', 50)
 
 def debug():
     sha3.msglen=32
