@@ -1,9 +1,3 @@
-# TODO notes
-# Optimize - generate clauses/variables on the fly, dont keep references to left/right operands
-#            so that python runtime can GC them if not required
-#          - propagate constants, ...
-
-
 class BitVector():
     def __init__(self, size):
         self.size = size
@@ -30,12 +24,6 @@ class BitVector():
         for i in range(len(self.bits)):
             if self.bits[i] is not None:
                 f.write('{} 0\n'.format(self.vars[i] * (1 if self.bits[i] else -1)))
-    def verify(self, instance):
-        for i in range(len(self.bith)):
-            if self.bits[i] is not None:
-                assert self.bits[i] == instance.getVar(self.vars[i])
-            # TODO
-            #assert self.getBit(i) == instance.getVar(self.vars[i])
     def getValuation(self, instance):
         return [instance.getVar(self.vars[i]) for i in range(self.size)]
 
@@ -215,17 +203,14 @@ class OperatorAnd(NaryOperator):
                 f.write('{} '.format(-1*op.vars[i]))
             f.write('0\n')
 
+usexor = False
 xorcnt = 0
 
 import itertools
 class OperatorXor(NaryOperator):
     def printOperatorClauses(self, f):
-        #print(len(self.operands))
-
-        # TODO mode switch
-        global xorcnt
-        #if xorcnt < 10:
-        if False:
+        global xorcnt, usexor
+        if usexor:
             xorcnt += 1
             for i in range(len(self.vars)):
                 f.write('x{}'.format(self.vars[i]))
@@ -241,46 +226,6 @@ class OperatorXor(NaryOperator):
                         f.write('{} '.format(v[j]*self.operands[j].vars[i]))
                         xneg *= v[j]
                     f.write('{} 0\n'.format(xneg*self.vars[i]))
-
-
-class BinaryOperatorAnd(BinaryOperator):
-    def getBit(self, i):
-        return self.left.getBit(i) & self.right.getBit(i)
-    def printOperatorClauses(self, f):
-        for i in range(len(self.vars)):
-            # X <-> L & R   as CNF:     L | ~X
-            #                           R | ~X
-            #                           X | ~L | ~R
-            f.write('{} {} 0\n'.format(self.left.vars[i], -1*self.vars[i]))
-            f.write('{} {} 0\n'.format(self.right.vars[i], -1*self.vars[i]))
-            f.write('{} {} {} 0\n'.format(self.vars[i], -1*self.left.vars[i], -1*self.right.vars[i]))
-
-class BinaryOperatorOr(BinaryOperator):
-    def getBit(self, i):
-        return self.left.getBit(i) | self.right.getBit(i)
-    def printOperatorClauses(self, f):
-        for i in range(len(self.vars)):
-            # X <-> L | R   as CNF:     ~L | X
-            #                           ~R | X
-            #                           ~X | L | R
-            f.write('{} {} 0\n'.format(-1*self.left.vars[i], self.vars[i]))
-            f.write('{} {} 0\n'.format(-1*self.right.vars[i], self.vars[i]))
-            f.write('{} {} {} 0\n'.format(-1*self.vars[i], self.left.vars[i], self.right.vars[i]))
-
-class BinaryOperatorXor(BinaryOperator):
-    def getBit(self, i):
-        return self.left.getBit(i) ^ self.right.getBit(i)
-    def printOperatorClauses(self, f):
-        raise Exception # TODO remove the binary variants
-        for i in range(len(self.vars)):
-            # X <-> L ^ R   as CNF:     X | ~L | R
-            #                           X | L | ~R
-            #                           ~X | ~L | ~R
-            #                           ~X | L | R
-            f.write('{} {} {} 0\n'.format(self.vars[i], -1*self.left.vars[i], self.right.vars[i]))
-            f.write('{} {} {} 0\n'.format(self.vars[i], self.left.vars[i], -1*self.right.vars[i]))
-            f.write('{} {} {} 0\n'.format(-1*self.vars[i], -1*self.left.vars[i], -1*self.right.vars[i]))
-            f.write('{} {} {} 0\n'.format(-1*self.vars[i], self.left.vars[i], self.right.vars[i]))
 
 class OperatorAdd(BinaryOperator):
     def __init__(self, left, right):
@@ -346,47 +291,38 @@ class Instance:
         print('Setting variables...')
         for o in output:
             o.assignVars(self)
-    def emit(self, output):#), optimizers=None):
-        #if optimizers:
-        #    print('Running optimizers')
-        #    # TODO run multiple times until fixpoint
-        #    for o in optimizers:
-        #        for i in range(len(output)):
-        #            output[i] = o.optimize(output[i])
+
+    def emit(self, output):
         if self.varCount == 0:
             self.assignVars(output)
         f = open('instance.cnf', 'w')
         print('Generating clauses...')
         for b in self.branches:
-            f.write('b {} 0\n'.format(b)) # TODO support groups
+            f.write('b {} 0\n'.format(b))
         for o in output:
             o.printClauses(f)
         f.close()
+
     def read(self, path):
         self.vars = [None]*(self.varCount + 1)
         with open(path, 'r') as f:
-            #f.readline()
             for line in f.readlines():
-                #print('LINE', line[:50])
                 for x in line.strip().split():
                     if not x.isdecimal() and (x[0] != '-' or not x[1:].isdecimal()):
                         if x == 'v':
-                            #print('\tCONTINUE', x)
                             continue
-                        else: # c comment / s satisfiable
-                            #print('\tIGNORE', x)
+                        else:
                             break
                     v = int(x)
                     if v == 0:
                         break
-                    #print('\t', abs(v), v)
                     if abs(v) >= len(self.vars):
                         continue # TODO really ignore?
                     self.vars[abs(v)] = True if v > 0 else False
+
     def getVar(self, v):
         return self.vars[v]
-    def verify(self, output):
-        output.verify(self)
+
     def write_annotations(self, path):
         data = {}
         for k, v in self.varmap.items():
@@ -403,7 +339,6 @@ class Instance:
         from subprocess import Popen, PIPE
         import sys
         p = Popen(sat_cmd + ['instance.cnf', 'instance.out'], stdout=PIPE)
-        #stdout, _ = p.communicate()
         t,conflicts,vars,clauses,sat = None, None, None, None, False
         for line in iter(p.stdout.readline, b""):
             line = line.decode()
@@ -416,7 +351,5 @@ class Instance:
                 conflicts = int(line.split(':')[1].split('(')[0].strip())
             elif line.strip().startswith('SATISFIABLE') or line.strip().startswith('s SATISFIABLE'):
                 sat = True
-
-        # TODO vars/clauses
         self.read('instance.out')
         return {'solver': sat_cmd, 'time': t, 'conflicts': conflicts, 'vars': vars, 'clauses': clauses, 'satisfiable': sat}

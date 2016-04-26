@@ -121,9 +121,6 @@ def run(hash_name, message_len, rounds, input_fix, output_fix, sat_cmd, seed, co
                 x, y = hash['outindex'](i)
                 outxor[x].bits[y] = output_fix[i] == '0'
 
-
-    # TODO merge xor clauses / other optimizations
-
     # Output and solve
     if collision:
         instance.emit(msg + out + outxor + [allrots])

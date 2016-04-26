@@ -116,13 +116,14 @@ def SHA1_run(message, rounds, optimized=False):
 
     h0, h1, h2, h3, h4 = [intToVector(x) for x in [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]]
 
-    r1 = OptimizeExpression(lambda b, c, d: (b & c) ^ (~b & d))
-    r24 = lambda b, c, d: b^c^d
-    r3 = OptimizeExpression(lambda b, c, d: (b & c) ^ (b & d) ^ (c & d))
-    opt_fs = [lambda a, b, c, d, e: r1(b, c, d),
-              lambda a, b, c, d, e: r24(b, c, d),
-              lambda a, b, c, d, e: r3(b, c, d),
-              lambda a, b, c, d, e: r24(b, c, d)]
+    if optimized:
+        r1 = OptimizeExpression(lambda b, c, d: (b & c) ^ (~b & d))
+        r24 = lambda b, c, d: b^c^d
+        r3 = OptimizeExpression(lambda b, c, d: (b & c) ^ (b & d) ^ (c & d))
+        opt_fs = [lambda a, b, c, d, e: r1(b, c, d),
+                  lambda a, b, c, d, e: r24(b, c, d),
+                  lambda a, b, c, d, e: r3(b, c, d),
+                  lambda a, b, c, d, e: r24(b, c, d)]
     A, B, C, D, E = h0, h1, h2, h3, h4
     for i in range(rounds):
         if optimized:
