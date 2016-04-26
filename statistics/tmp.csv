@@ -1,0 +1,7 @@
+32,24,8,[timeout 30 ./minisatrun.sh],none,0,368,7.248
+32,24,8,[timeout 30 ./minisatrun.sh],none,0,368,6.452
+32,24,8,[timeout 30 ./minisatrun.sh],r0-S-x-y,0,530,19.984
+32,24,4,[timeout 30 ./minisatrun.sh],r0-S-x-y,0,530,22.652
+32,24,2,[timeout 30 ./minisatrun.sh],r0-S-x-y,0,530,21.192
+32,24,4,[timeout 30 ./minisatrun.sh],none,0,368,6.436
+32,24,4,[timeout 30 ./minisatrun.sh],r1-S-x-y,0,-1,?
