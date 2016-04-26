@@ -1,3 +1,9 @@
+# Implementations of several hash functions for the
+# HashToolkit command line tool
+#
+# These are based on the hash functions implemented in the
+# samples directory.
+
 from instance import *
 import md5_test
 import sha1_test

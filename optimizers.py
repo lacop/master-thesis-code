@@ -1,4 +1,8 @@
-from instance import *
+# Implementations of some optimizations
+#
+# Please refer to the thesis text for explanation.
+
+# from instance import *
 
 class Optimizer:
     def optimize(self, root):

@@ -1,3 +1,7 @@
+# The library itself
+#
+# Please refer to samples and thesis text for usage instructions.
+
 class BitVector():
     def __init__(self, size):
         self.size = size
@@ -314,7 +318,7 @@ class Instance:
                     if v == 0:
                         break
                     if abs(v) >= len(self.vars):
-                        continue # TODO really ignore?
+                        continue
                     self.vars[abs(v)] = True if v > 0 else False
 
     def getVar(self, v):

@@ -1,3 +1,8 @@
+# Command line tool for using the library for preimage and collision
+# attacks on implemented hash functions.
+#
+# Run with --help for instructions. Refer to thesis text for more details.
+
 from instance import *
 from hashes import *
 import click

@@ -1,3 +1,5 @@
+# Sample showing how to use the Espresso expression optimization
+
 from instance import *
 from optimizers import *
 instance = Instance()
@@ -6,19 +8,15 @@ X = BitVector(1)
 Y = BitVector(1)
 Z = BitVector(1)
 
+# Unoptimized
 F = (X & Y) ^ (~X & Z)
-#F.bits[0] = False
-#X.bits[0] = True
-#Y.bits[0] = True
-#Z.bits[0] = True
 
+# Optimized
 chopt = OptimizeExpression(lambda x,y,z: (x&y) ^ (~x&z))
 F = chopt(X, Y, Z)
 
 instance.emit([F])
-#stats = instance.solve('./cmsrunq.sh')
-stats = instance.solve(['./minisatrun.sh'])
-#print(stats)
+instance.solve(['minisat'])
 
 print('X', X.getValuation(instance))
 print('Y', Y.getValuation(instance))
