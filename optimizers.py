@@ -4,19 +4,18 @@ class Optimizer:
     def optimize(self, root):
         return root
 
-# TODO redesign the optimzer
-# now creates duplicates/... since it's DAG not a tree
-
 class BinaryOperatorMergeOptimizer(Optimizer):
     def __init__(self, operatorType, maxArity = None):
         self.operatorType = operatorType
         self.maxArity = maxArity
     def optimize(self, root):
+        if root.opt is not None:
+            return root.opt
         operands = root.getParents()
         if len(operands) == 0:
             return root
         for i in range(len(operands)):
-                operands[i] = self.optimize(operands[i])
+            operands[i] = self.optimize(operands[i])
         if type(root) is self.operatorType:
             # New arguments/operands for this operator
             newops = []
@@ -34,16 +33,20 @@ class BinaryOperatorMergeOptimizer(Optimizer):
                 else:
                     newops.append(operands[i])
             assert self.maxArity is None or len(newops) <= self.maxArity
-            return type(root)(*newops)
+            #print('Merging', len(newops))
+            root.opt = type(root)(*newops)
         else:
-            return type(root)(*operands)
+            if type(root) is CyclicLeftShift or type(root) is LeftShift:
+                root.opt = type(root)(operands[0], root.amount)
+            else:
+                root.opt = type(root)(*operands)
+        return root.opt
 
 
 DefaultOrOperatorMerger = BinaryOperatorMergeOptimizer(OperatorOr)
 DefaultAndOperatorMerger = BinaryOperatorMergeOptimizer(OperatorAnd)
-
-# TODO ?
-DefaultXorOperatorMerger = BinaryOperatorMergeOptimizer(OperatorXor, 2)
+# Avoid very large XORs, since it needs 2^arity clauses
+DefaultXorOperatorMerger = BinaryOperatorMergeOptimizer(OperatorXor, 4)
 
 class EspressoExpression(NaryOperator):
     def __init__(self, incnt, clauses, vectors):

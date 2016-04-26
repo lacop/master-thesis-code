@@ -47,28 +47,66 @@ sys.setrecursionlimit(10000)
 
 #As = []
 #size = 10
-#import itertools
+import itertools
 #for v in itertools.product([0, 1], repeat=size):
 #    As.append(ConstantVector(v))
-#X, Y = As[0], As[0]
+
+#w = 4
+#As = [BitVector(w) for _ in range(2**w)]
+#X = As[0]
+#Y = As[0]
 #Z = As[0]
 #for j in range(1, len(As)):
 #    X = X | As[j]
-#    Y = Y & As[j]
-#    Z = Z ^ As[j]
+#    Y = Y | As[j]
+    #Y = Y & As[j]
+    #Z = Z ^ As[j]
+
+#Z = (X | Y) | (Y | X)
+
 #X = DefaultOrOperatorMerger.optimize(X)
 #Y = DefaultAndOperatorMerger.optimize(Y)
-#i.emit([X, Y])
-#Z = DefaultXorOperatorMerger.optimize(Z)
+#Z = DefaultOrOperatorMerger.optimize(Z)
+#i.emit([X])
+#i.emit([Z])
+#i.emit([X, Y, Z])
+
+Q = BitVector(4)
+for v in itertools.product([0, 1], repeat=4):
+    Q = Q & ConstantVector(v)
+
+As = [ConstantVector([False]*4)]
+for j in range(20):
+    As.append(As[-1] & Q)
+Z = As[0]
+for j in range(1, len(As)):
+    Z = Z & As[j]
+
+#Z = BinaryOperatorMergeOptimizer(OperatorXor, 10).optimize(Z)
+Z = BinaryOperatorMergeOptimizer(OperatorAnd, 10).optimize(Z)
+
+i.emit([Z])
+
+
+#r3 = lambda b, c, d: (b & c) ^ (b & d) ^ (c & d)
+#B, C, D = BitVector(4), BitVector(4), BitVector(4)
+#F = r3(B, C, D)
+#Z = r3(B, C, D)
+#Z = B ^ C ^ D
+#E = BitVector(4)
+
+#Z = F + E
+#Z = BinaryOperatorMergeOptimizer(OperatorXor, 6).optimize(Z)
 #i.emit([Z])
 
-B = BitVector(1)
-C = BitVector(1)
-D = BitVector(1)
 
-F = (B & C) | (~B & D)
+#B = BitVector(1)
+#C = BitVector(1)
+#D = BitVector(1)
+#
+#F = (B & C) | (~B & D)
 
-i.emit([B, C, D, F])
+#i.emit([B, C, D, F])
 
 
 #X = A ^ B ^ C ^ D
@@ -92,9 +130,12 @@ i.emit([B, C, D, F])
 #i.emit([C, D])
 
 from subprocess import call
-call(['minisat', 'instance.cnf', 'instance.out'])
-i.read('instance.out')
+#call(['minisat', 'instance.cnf', 'instance.out'])
+#i.read('instance.out')
+#stats = i.solve(['./cmsrun.sh'])
+stats = i.solve(['./minisatrun.sh'])
 
+print(stats)
 #i.verify(H)
 #i.verify(D)
 
@@ -105,14 +146,14 @@ def toInt(X):
     return val
 
 #print('A', A.getValuation(i))
-print('B', B.getValuation(i))
-print('C', C.getValuation(i))
-print('D', D.getValuation(i))
-print('F', F.getValuation(i))
-print()
+#print('B', B.getValuation(i))
+#print('C', C.getValuation(i))
+#print('D', D.getValuation(i))
+#print('F', F.getValuation(i))
+#print()
 #print('X', X.getValuation(i))
 #print('Y', Y.getValuation(i))
-#print('Z', Z.getValuation(i))
+print('Z', Z.getValuation(i))
 
 #print('A', A.getValuation(i), toInt(A))
 #print('B', B.getValuation(i), toInt(B))

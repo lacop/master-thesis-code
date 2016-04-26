@@ -83,14 +83,20 @@ def main(mlength = None, rounds = None, out_file = None):
     # Fix message/output bits here
 
     #Mvec[0].bits = [True]*32
-    h4.bits = [False]*8 + [None]*24
+    #h4.bits = [False]*8 + [None]*24
 
     #######################################################
 
     # TODO prettier
     # Generate CNF instance, solve, read
     print('Emit start')
-    instance.assignVars([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
+    vars = [h0, h1, h2, h3, h4] + Mvec
+
+    #for i in range(len(vars)):
+    #    vars[i] = BinaryOperatorMergeOptimizer(OperatorXor, 8).optimize(vars[i])
+
+
+    instance.assignVars(vars)# + [QQ])
 
     # Branching order
     #instance.branch(roundvars[0][0].vars)
@@ -102,7 +108,7 @@ def main(mlength = None, rounds = None, out_file = None):
     #     for v in [rv[4]]:
     #         instance.branch(v.vars)
 
-    instance.emit([h0, h1, h2, h3, h4] + Mvec)# + [QQ])
+    instance.emit(vars)# + [QQ])
     #stats = instance.solve('./cmsrunq.sh')
     stats = instance.solve(['./minisatrun.sh'])
     #from subprocess import call
@@ -118,6 +124,7 @@ def main(mlength = None, rounds = None, out_file = None):
 
     # Get digest bits
     Dbits = []
+    h0, h1, h2, h3, h4 = vars[:5]
     for q in [h0, h1, h2, h3, h4][::-1]:
         Dbits += q.getValuation(instance)
     print('Digest', toInt(Dbits)) #, Dbits)
@@ -143,4 +150,4 @@ def main(mlength = None, rounds = None, out_file = None):
             f.write('{},{}\n'.format(rounds, stats['time']))
 
 if __name__ == '__main__':
-    main()
+    main(rounds=80)

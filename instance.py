@@ -6,6 +6,7 @@ class BitVector():
         self.printed = False
         self.assigned = False
         self.annotation = None
+        self.opt = None
     def getBit(self, i):
         return self.bits[i]
     def __str__(self):
@@ -59,7 +60,6 @@ class ConstantVector(BitVector):
     def printClauses(self, f):
         BitVector.printClauses(self, f)
 
-# Todo universal operator with getbit/print lambdas
 class BinaryOperator(BitVector):
     def __init__(self, left, right):
         assert left.size == right.size
@@ -234,9 +234,6 @@ class OperatorAdd(BinaryOperator):
     def assignVars(self, instance):
         BinaryOperator.assignVars(self, instance)
         self.carry = [self.vars[i+self.size] for i in range(self.size)]
-    def getBit(self, i):
-        # TODO
-        return False
     def printOperatorClauses(self, f):
         f.write('-{} 0\n'.format(self.carry[0]))
         #f.write('-{} 0\n'.format(self.carry[self.size-1]))
