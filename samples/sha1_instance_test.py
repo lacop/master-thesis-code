@@ -1,6 +1,8 @@
-from instance import *
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+from library.instance import *
+from library.optimizers import *
 from sha1_test import K, fs, sha1, digest_to_hex
-from optimizers import *
 
 # Little-endian
 def intToVector(x, size=32):

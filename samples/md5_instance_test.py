@@ -1,4 +1,6 @@
-from instance import *
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+from library.instance import *
 from md5_test import S, K, fs, gs, md5, digest_to_hex
 
 #print(md5(b"\x00", rounds=1))

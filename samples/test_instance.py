@@ -1,7 +1,9 @@
 # Few very simple samples of library usage
 
-from instance import *
-from optimizers import *
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+from library.instance import *
+from library.optimizers import *
 import itertools
 
 def solve(vars):

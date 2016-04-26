@@ -2,7 +2,7 @@
 #
 # Please refer to the thesis text for explanation.
 
-# from instance import *
+from library.instance import *
 
 class Optimizer:
     def optimize(self, root):

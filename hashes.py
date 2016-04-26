@@ -4,12 +4,12 @@
 # These are based on the hash functions implemented in the
 # samples directory.
 
-from instance import *
-import md5_test
-import sha1_test
-import sha3_reference
+from library.instance import *
+import samples.md5_test as md5
+import samples.sha1_test as sha1
+import samples.sha3_reference as sha3
 import random, math
-from optimizers import OptimizeExpression
+from library.optimizers import OptimizeExpression
 
 def intToVector(x, size=32):
     bits = [False]*size
@@ -43,15 +43,15 @@ def MD5_create_message(mlength):
     return Mvec
 
 def MD5_run(message, rounds):
-    Kvec = [intToVector(x) for x in md5_test.K]
+    Kvec = [intToVector(x) for x in md5.K]
     a0, b0, c0, d0 = [intToVector(x) for x in [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]]
     A, B, C, D = a0, b0, c0, d0
     for i in range(rounds):
-        F = md5_test.fs[i//16](A, B, C, D)
-        G = md5_test.gs[i//16](i)
+        F = md5.fs[i//16](A, B, C, D)
+        G = md5.gs[i//16](i)
 
         X = A + F + Kvec[i] + message[G]
-        R = CyclicLeftShift(X, md5_test.S[i])
+        R = CyclicLeftShift(X, md5.S[i])
 
         A, B, C, D = D, B+R, B, C
     a0, b0, c0, d0 = a0+A, b0+B, c0+C, d0+D
@@ -77,8 +77,8 @@ def MD5_print_and_verify(instance, Mvec, digest, mlength, rounds):
         message += toInt(bits).to_bytes(1, byteorder='little')
     print ('Message bytes:', message, 'rounds: ', rounds)
 
-    reference = md5_test.md5(message, rounds=rounds)
-    print('MD5   ', reference, md5_test.digest_to_hex(reference).zfill(32))
+    reference = md5.md5(message, rounds=rounds)
+    print('MD5   ', reference, md5.digest_to_hex(reference).zfill(32))
     assert reference == toInt(Dbits)
     print('MATCH!')
 
@@ -86,8 +86,8 @@ def MD5_random_ref(mlength, rounds):
     assert mlength % 8 == 0
 
     msg = bytes([random.randint(0, 255) for _ in range(mlength//8)])
-    ref = md5_test.md5(msg, rounds=rounds)
-    digest = md5_test.digest_to_hex(ref)
+    ref = md5.md5(msg, rounds=rounds)
+    digest = md5.digest_to_hex(ref)
 
     bits = []
     while ref > 0 or len(bits) < 128:
@@ -118,7 +118,7 @@ def SHA1_create_message(mlength):
     return Mvec
 
 def SHA1_run(message, rounds, optimized=False):
-    Kvec = [intToVector(x) for x in sha1_test.K]
+    Kvec = [intToVector(x) for x in sha1.K]
 
     h0, h1, h2, h3, h4 = [intToVector(x) for x in [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]]
 
@@ -135,7 +135,7 @@ def SHA1_run(message, rounds, optimized=False):
         if optimized:
             F = opt_fs[i//20](A, B, C, D, E)
         else:
-            F = sha1_test.fs[i//20](A, B, C, D, E)
+            F = sha1.fs[i//20](A, B, C, D, E)
         k = Kvec[i//20]
         F.annotation = 'Round #'+str(i)+' round function F'
 
@@ -171,8 +171,8 @@ def SHA1_print_and_verify(instance, Mvec, digest, mlength, rounds):
         message += toInt(bits).to_bytes(1, byteorder='big')
     print ('Message bytes:', message, 'rounds: ', rounds)
 
-    reference = sha1_test.sha1(message, rounds=rounds)
-    print('sha1  ', str(reference).zfill(50), '  ', sha1_test.digest_to_hex(reference))
+    reference = sha1.sha1(message, rounds=rounds)
+    print('sha1  ', str(reference).zfill(50), '  ', sha1.digest_to_hex(reference))
     assert reference == toInt(Dbits)
     print('MATCH!')
 
@@ -180,8 +180,8 @@ def SHA1_random_ref(mlength, rounds):
     assert mlength % 8 == 0
 
     msg = bytes([random.randint(0, 255) for _ in range(mlength//8)])
-    ref = sha1_test.sha1(msg, rounds=rounds)
-    digest = sha1_test.digest_to_hex(ref)
+    ref = sha1.sha1(msg, rounds=rounds)
+    digest = sha1.digest_to_hex(ref)
 
     bits = []
     while ref > 0 or len(bits) < 160:
@@ -236,7 +236,7 @@ def SHA3_run(P, roundlimit):
     def rounds():
         #global S, roundvars
         for i in range(roundlimit):
-            rc = intToVector(sha3_reference.Keccak.RC[i], 64) # TODO truncate to w bits
+            rc = intToVector(sha3.Keccak.RC[i], 64) # TODO truncate to w bits
             B = [[intToVector(0, w) for _ in range(5)] for _ in range(5)]
             C = [intToVector(0, w) for _ in range(5)]
             D = [intToVector(0, w) for _ in range(5)]
@@ -251,7 +251,7 @@ def SHA3_run(P, roundlimit):
 
             for x in range(5):
                 for y in range(5):
-                    B[y][(2*x+3*y)%5] = CyclicLeftShift(S[x][y], sha3_reference.Keccak.r[x][y])
+                    B[y][(2*x+3*y)%5] = CyclicLeftShift(S[x][y], sha3.Keccak.r[x][y])
 
             for x in range(5):
                 for y in range(5):
@@ -307,8 +307,7 @@ def SHA3_print_and_verify(instance, P, out, msglen, roundlimit):
     digest = digest[:2*n//8]
     print('digest:   ', digest.upper())
 
-    from sha3_reference import Keccak
-    k = Keccak(roundlimit=roundlimit)
+    k = sha3.Keccak(roundlimit=roundlimit)
     ref_digest = k.Keccak(msg, r, c, sfx, n)
     print('reference:', ref_digest)
 
@@ -319,7 +318,7 @@ def SHA3_random_ref(mlength, rounds):
     r, c, sfx, n, b, w, nr = 576, 1024, 0x06, 512, 1600, 64, 24 # SHA-3-512
     assert mlength % 8 == 0
 
-    k = sha3_reference.Keccak(roundlimit=rounds)
+    k = sha3.Keccak(roundlimit=rounds)
     msg = bytes([random.randint(0, 255) for _ in range(mlength//8)])
     msg_bits = []
     for i in range(mlength):

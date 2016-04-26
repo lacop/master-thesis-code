@@ -3,11 +3,10 @@
 #
 # Run with --help for instructions. Refer to thesis text for more details.
 
-from instance import *
+from library.instance import *
 from hashes import *
 import click
 from subprocess import Popen, PIPE, call
-import optimizers
 import random
 
 hash_functions = {

@@ -1,7 +1,10 @@
 # Sample showing how to use the Espresso expression optimization
 
-from instance import *
-from optimizers import *
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+from library.instance import *
+from library.optimizers import *
+
 instance = Instance()
 
 X = BitVector(1)

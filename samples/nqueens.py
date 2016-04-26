@@ -5,7 +5,10 @@
 #
 # Explanation of this code can be found in the text of the thesis.
 
-from instance import *
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+from library.instance import *
+
 instance = Instance()
 
 def FalseVector(N):

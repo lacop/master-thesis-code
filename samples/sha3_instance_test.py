@@ -1,6 +1,9 @@
-from instance import *
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+from library.instance import *
+from library.optimizers import OptimizeExpression
+
 from sha3_reference import Keccak
-from optimizers import OptimizeExpression
 import math
 
 # Little-endian
