@@ -35,7 +35,7 @@ fs = [lambda a, b, c, d, e: r1(b, c, d),
       lambda a, b, c, d, e: r3(b, c, d),
       lambda a, b, c, d, e: r24(b, c, d)]
 
-def main(mlength = None, rounds = None, out_file = None):
+def main(mlength = None, rounds = None, out_file = None, out_bits = None):
     instance = Instance()
     Kvec = [intToVector(x) for x in K]
 
@@ -81,25 +81,26 @@ def main(mlength = None, rounds = None, out_file = None):
         roundvars.append((A, B, C, D, E))
     h0, h1, h2, h3, h4 = h0+A, h1+B, h2+C, h3+D, h4+E
 
-    #################### CONFIGURATION ####################
-    # Fix message/output bits here
-
-    #Mvec[0].bits = [True]*32
-    #h4.bits = [False]*8 + [None]*24
-
-    #######################################################
-
     # TODO prettier
     # Generate CNF instance, solve, read
     print('Emit start')
     vars = [h0, h1, h2, h3, h4] + Mvec
-
     #for i in range(len(vars)):
-    #    vars[i] = BinaryOperatorMergeOptimizer(OperatorXor, 8).optimize(vars[i])
-
+    #    vars[i] = BinaryOperatorMergeOptimizer(OperatorXor, 6).optimize(vars[i])
+    h0, h1, h2, h3, h4 = vars[:5]
 
     instance.assignVars(vars)# + [QQ])
 
+    #################### CONFIGURATION ####################
+    # Fix message/output bits here
+
+    #Mvec[0].bits = [True]*32
+    #h0.bits = [None]*24 + [True]*8
+    if out_bits is not None:
+        h0.bits = out_bits 
+
+    #######################################################
+    
     # Branching order
     #instance.branch(roundvars[0][0].vars)
     #for rv in roundvars[::-1]:
@@ -126,7 +127,6 @@ def main(mlength = None, rounds = None, out_file = None):
 
     # Get digest bits
     Dbits = []
-    h0, h1, h2, h3, h4 = vars[:5]
     for q in [h0, h1, h2, h3, h4][::-1]:
         Dbits += q.getValuation(instance)
     print('Digest', toInt(Dbits)) #, Dbits)
@@ -152,4 +152,10 @@ def main(mlength = None, rounds = None, out_file = None):
             f.write('{},{}\n'.format(rounds, stats['time']))
 
 if __name__ == '__main__':
-    main(rounds=80)
+    main(rounds=80, out_bits = [None]*24 + [False]*8)
+    #for _ in range(20):
+    #    main(rounds=80, out_file='sha1-merge-on.csv')
+    import itertools
+    #for comb in itertools.product([True, False], repeat=8):
+    #    main(rounds=80, out_file='sha1-merge-on.csv', out_bits = [None]*24 + list(comb))
+
